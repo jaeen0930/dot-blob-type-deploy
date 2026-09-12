@@ -1,0 +1,1322 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dot Blob Type — Car Esperanto 패턴 변환기</title><meta name="description" content="영어 문장을 24가지 구조의 추상 패턴으로 바꾸는 변환기. 한동대 디그리쇼 5조 CAR ESPERANTO."><style>body{background:#EEECE7}</style></head><body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Syne:wght@800&family=Unbounded:wght@900&family=Instrument+Serif&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --bg: #ECEAE5;
+    --panel: #F6F5F2;
+    --line: #D6D3CC;
+    --ink: #1C1B19;
+    --muted: #6E6B64;
+    --accent: #5C3A1E;
+    --field: #FFFFFF;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --sans: "IBM Plex Sans", -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17171A; --panel: #202024; --line: #34343A; --ink: #ECEAE5; --muted: #9A978F; --field: #131316;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17171A; --panel: #202024; --line: #34343A; --ink: #ECEAE5; --muted: #9A978F; --field: #131316;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans); font-size: 14px; line-height: 1.5;
+    padding-block: 20px 40px; padding-inline: 20px;
+  }
+  header { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+  header h1 { font-family: var(--mono); font-weight: 500; font-size: 15px; letter-spacing: .04em; margin: 0; }
+  header p { margin: 0; color: var(--muted); font-size: 13px; }
+  .app { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .app { grid-template-columns: 1fr; } }
+  aside { background: var(--panel); border: 1px solid var(--line); padding: 16px; display: grid; gap: 14px; }
+  .group { display: grid; gap: 8px; }
+  .group + .group { border-top: 1px solid var(--line); padding-top: 12px; }
+  .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  label.row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; font-size: 13px; }
+  label.row output { font-family: var(--mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  label.row input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); margin: 0; }
+  textarea, select, input[type=number] {
+    width: 100%; font: inherit; color: var(--ink); background: var(--field);
+    border: 1px solid var(--line); padding: 8px 10px; border-radius: 0;
+  }
+  textarea { font-family: var(--mono); resize: vertical; min-height: 64px; }
+  #preview { font-weight: 900; font-size: 22px; line-height: 1.1; white-space: pre-wrap; word-break: break-all; color: var(--ink); border: 1px dashed var(--line); padding: 6px 8px; min-height: 36px; }
+  .check { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .check input { accent-color: var(--accent); margin: 0; }
+  input:disabled { opacity: .35; }
+  .colors { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .colors label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .colors input[type=color] { width: 34px; height: 26px; padding: 0; border: 1px solid var(--line); background: none; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  button {
+    font: inherit; font-size: 13px; padding: 7px 12px; cursor: pointer; border-radius: 0;
+    border: 1px solid var(--ink); background: transparent; color: var(--ink);
+  }
+  button.primary { background: var(--ink); color: var(--bg); }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button.primary:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  main { display: grid; gap: 10px; min-width: 0; }
+  .stage { border: 1px solid var(--line); background: var(--stageBg, #ECEAE5); overflow: hidden; }
+  canvas { display: block; width: 100%; height: auto; }
+  .status { font-family: var(--mono); font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .toast { color: var(--accent); }
+  details { font-size: 13px; color: var(--muted); }
+  details pre { background: var(--field); border: 1px solid var(--line); padding: 10px; overflow: auto; max-height: 200px; font-family: var(--mono); font-size: 11px; }
+</style>
+
+<header>
+  <h1>DOT BLOB TYPE</h1>
+  <p>영어 문장을 격자에 얹어 무늬로 녹입니다. 글자는 재료일 뿐 — 결과가 글자로 읽히면 실패입니다.</p>
+</header>
+
+<div class="app">
+  <aside>
+    <div class="group">
+      <span class="eyebrow">Text</span>
+      <textarea id="text" spellcheck="false">miami</textarea>
+      <div class="btns">
+        <button id="azUpper" type="button">A–Z</button>
+        <button id="azLower" type="button">a–z</button>
+        <button id="az09" type="button">A–Z + 0–9</button>
+      </div>
+      <div id="preview" aria-label="원문 미리보기"></div>
+      <select id="font">
+        <option value="Archivo Black" selected>Archivo Black — 굵은 산세리프</option>
+        <option value="Unbounded">Unbounded — 넓고 둥근</option>
+        <option value="Syne">Syne — 기하학적</option>
+        <option value="Instrument Serif">Instrument Serif — 세리프</option>
+      </select>
+    </div>
+
+    <div class="group">
+      <span class="eyebrow">Grid</span>
+      <label class="row"><span>가로 셀 수 (성김 ↔ 촘촘)</span><output id="colsV">14</output><input type="range" id="cols" min="6" max="90" value="14"></label>
+      <label class="row"><span>단계 수 (아래로 점점 촘촘히)</span><output id="levelsV">3</output><input type="range" id="levels" min="1" max="6" value="3"></label>
+      <label class="row"><span>글자 숨김 (탈락·흩뿌림·물결 어긋남)</span><output id="hideV">0.5</output><input type="range" id="hide" min="0" max="1" step="0.02" value="0.5"></label>
+      <label class="row"><span>단계 배율 (다음 단계가 몇 배 촘촘해지나)</span><output id="mulV">1.9</output><input type="range" id="mul" min="1.05" max="6" step="0.05" value="1.9"></label>
+    </div>
+
+    <div class="group">
+      <span class="eyebrow">Structure</span>
+      <select id="mode">
+        <option value="pos" selected>양각 — 점을 찍고 다리로 잇기</option>
+        <option value="neg">음각 — 면을 채우고 모서리를 원으로 파기</option>
+        <option value="quarter">쿼터 타일 — 밝기만큼 모서리를 4분원으로 깎기</option>
+        <option value="grid">가변 격자 — 늘어난 검은 격자 속 흰 창을 밝기만큼 열기</option>
+        <option value="quad">쿼드트리 — 경계만 잘게 쪼개고, 중간 톤은 안에 원을 넣기</option>
+        <option value="pill">캡슐 렌즈 — 흐려진 글자를 세로 캡슐들이 굴절시켜 보여주기</option>
+        <option value="vasa">회전 타일 — 반원이 이웃을 파고드는 회색조 C자 타일</option>
+        <option value="lens">렌즈 격자 — 격자선 위에 어두울수록 부푸는 렌즈 모양</option>
+        <option value="bau">타일 벽 — 흰 타일 위에 4분원·반원을 드문드문 놓기</option>
+        <option value="star">별 격자 — 45° 둥근 사각형 격자, 어두울수록 꼭짓점의 별이 커짐</option>
+        <option value="patch">X 패치워크 — 구역마다 다른 크기·색·굵기의 X 하프톤을 겹쳐 붙이기</option>
+        <option value="ascii">글리프 램프 — 밝기 띠마다 · / X ✱ ■ 로 바뀌는 타자기 하프톤</option>
+        <option value="moon">반달 타일 — 4분원 타일이 모여 원과 뒤집힌 원을 만드는 흑백 반전</option>
+        <option value="tri">삼각 직물 — 두 색 지그재그 삼각형 띠, 어두울수록 잘게, 꼭짓점엔 흰 점</option>
+        <option value="motif">모티프 타일 — 큰 타일마다 별·원·반원 같은 기하 도형 하나씩</option>
+        <option value="blocks">반쪽 타일 — 2×2 타일의 절반·L자를 채우고 모서리 하나씩 둥글리기</option>
+        <option value="drop">접힌 원 — 한 귀퉁이만 각진 원에 회전 그라데이션, 드문드문 흩어 놓기</option>
+        <option value="iso">아이소 벽면 — 기울어진 면마다 마름모 하프톤, 지붕선에서 어둡게 시작</option>
+        <option value="bayer">오더드 디더 — 번진 글자를 8×8 바이어 행렬로 잘게 점찍기</option>
+        <option value="poster">포스터 4분원 — 큰 4분원이 이웃과 맞물려 원·반원을 이루는 성긴 구성</option>
+        <option value="rhomb">마름모 산란 — 육각 격자 위 세 방향 마름모, 어두울수록 빽빽하게</option>
+        <option value="cube">큐브 하프톤 — 육각형을 세 면으로 나누고, 밝을수록 면이 가는 선으로 줄어듦</option>
+        <option value="stamp">도장 타일 — 둥근 색 타일에 선·원·틈을 파낸 도자 타일 벽</option>
+        <option value="pix">둥근 픽셀 — 채운 칸을 한 덩어리로 잇고 바깥은 볼록, 안쪽은 오목하게 둥글리기</option>
+      </select>
+      <label class="row" id="lbiasRow" hidden><span>방향 편향 (가로 렌즈 ↔ 세로 렌즈)</span><output id="lbiasV">0</output><input type="range" id="lbias" min="-1" max="1" step="0.05" value="0"></label>
+      <label class="row" id="tonesRow" hidden><span>회색 단계 수</span><output id="tonesV">9</output><input type="range" id="tones" min="2" max="14" step="1" value="9"></label>
+      <label class="row" id="pillhRow" hidden><span>캡슐 길이 (너비 대비)</span><output id="pillhV">3</output><input type="range" id="pillh" min="1.5" max="9" step="0.5" value="3"></label>
+      <label class="row" id="refrRow" hidden><span>굴절 (가로 확대)</span><output id="refrV">1.3</output><input type="range" id="refr" min="1" max="2" step="0.05" value="1.3"></label>
+      <label class="row" id="warpRow" hidden><span>격자 왜곡 (열·행 너비 편차)</span><output id="warpV">0.8</output><input type="range" id="warp" min="0" max="1" step="0.02" value="0.8"></label>
+      <label class="row" id="bgdRow" hidden><span>여백 무늬 밀도 (0이면 글자만)</span><output id="bgdV">0.3</output><input type="range" id="bgd" min="0" max="1" step="0.02" value="0.3"></label>
+      <label class="row"><span id="dotLabel">점 크기</span><output id="dotV">0.92</output><input type="range" id="dot" min="0.4" max="1.2" step="0.02" value="0.92"></label>
+      <label class="row"><span>연결 두께</span><output id="bridgeV">0.6</output><input type="range" id="bridge" min="0" max="1" step="0.05" value="0.6"></label>
+      <label class="row"><span>연결 부드러움 (목 곡률)</span><output id="smoothV">0.6</output><input type="range" id="smooth" min="0" max="1.5" step="0.05" value="0.6"></label>
+      <label class="check"><input type="checkbox" id="diag"> 대각선도 연결</label>
+    </div>
+
+    <div class="group">
+      <span class="eyebrow">Noise</span>
+      <label class="row"><span>채움 문턱</span><output id="thrV">0.45</output><input type="range" id="thr" min="0.1" max="0.9" step="0.01" value="0.45"></label>
+      <label class="row"><span>흔들림 (경계 무작위)</span><output id="noiseV">0.35</output><input type="range" id="noise" min="0" max="1" step="0.01" value="0.35"></label>
+      <label class="row"><span id="sprLabel">흩뿌린 작은 점</span><output id="sprV">0.4</output><input type="range" id="spr" min="0" max="1" step="0.01" value="0.4"></label>
+      <label class="row"><span>시드</span><output id="seedV">7</output><input type="range" id="seed" min="1" max="999" value="7"></label>
+    </div>
+
+    <div class="group">
+      <span class="eyebrow">Color</span>
+      <div class="colors">
+        <label><input type="color" id="ink" value="#5C3A1E"> 점</label>
+        <label><input type="color" id="paper" value="#ECEAE5"> 바탕</label>
+        <label><input type="color" id="ink2" value="#7CC4E8"> 보조 1</label>
+        <label><input type="color" id="ink3" value="#141312"> 보조 2</label>
+      </div>
+    </div>
+
+    <div class="group">
+      <span class="eyebrow">Export</span>
+      <div class="btns">
+        <button id="shuffle">다시 섞기</button>
+        <button id="copySvg" class="primary">SVG 코드 복사</button>
+        <button id="dlSvg">SVG 저장</button>
+        <button id="dlPng">PNG 저장</button>
+      </div>
+      <p style="margin:0;font-size:12px;color:var(--muted)">저장 버튼이 막힌 환경이면 SVG 코드를 복사해 Figma나 Illustrator에 붙여넣으세요.</p>
+    </div>
+  </aside>
+
+  <main>
+    <div class="stage" id="stage"><canvas id="cv"></canvas></div>
+    <div class="status"><span id="info">—</span><span id="toast" class="toast"></span></div>
+    <details id="svgDetails"><summary>SVG 코드 보기</summary><pre id="svgOut"></pre></details>
+  </main>
+</div>
+
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const ids = ['cols','levels','mul','dot','bridge','thr','noise','spr','seed','warp','bgd','smooth','pillh','refr','tones','lbias','hide'];
+  const cv = $('cv'), ctx = cv.getContext('2d');
+  let lastSvg = '', svgOn = false, raf = 0;
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      let t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function params() {
+    const p = {};
+    ids.forEach(id => p[id] = parseFloat($(id).value));
+    p.text = $('text').value.replace(/\r/g, '');
+    p.font = $('font').value;
+    p.diag = $('diag').checked;
+    p.mode = $('mode').value;
+    p.ink = $('ink').value;
+    p.paper = $('paper').value; p.ink2 = $('ink2').value; p.ink3 = $('ink3').value;
+    return p;
+  }
+
+  // Rasterise text into a cols×rows coverage grid (0..1 per cell)
+  function coverageGrid(text, font, cols) {
+    const S = 6; // sub-samples per cell side
+    const lines = text.split('\n').filter(l => l.length);
+    if (!lines.length) return { cols, rows: 0, cov: [] };
+    const off = document.createElement('canvas');
+    const oc = off.getContext('2d');
+    const probe = 100;
+    oc.font = `900 ${probe}px "${font}"`;
+    const maxW = Math.max(...lines.map(l => oc.measureText(l).width));
+    const targetW = cols * S * 0.9;
+    const fs = probe * targetW / maxW;
+    const lineH = fs * 1.05;
+    const pad = fs * 0.1;
+    const rows = Math.ceil((lines.length * lineH + pad * 2) / S);
+    off.width = cols * S; off.height = rows * S;
+    oc.fillStyle = '#000';
+    oc.font = `900 ${fs}px "${font}"`;
+    oc.textBaseline = 'alphabetic';
+    lines.forEach((l, i) => oc.fillText(l, cols * S * 0.05, pad + lineH * i + fs * 0.8));
+    const d = oc.getImageData(0, 0, off.width, off.height).data;
+    const cov = new Float32Array(cols * rows);
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      let sum = 0;
+      for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+        sum += d[((r * S + y) * off.width + (c * S + x)) * 4 + 3];
+      }
+      cov[r * cols + c] = sum / (S * S * 255);
+    }
+    return { cols, rows, cov };
+  }
+
+  // Soft raster of the text for the capsule-lens mode: ink on paper, blurred, height snapped to whole capsule rows
+  function pillLevel(p, cols) {
+    const U = 32, capH = p.pillh;
+    const lines = p.text.split('\n').filter(l => l.length);
+    if (!lines.length) return null;
+    const off = document.createElement('canvas'), oc = off.getContext('2d');
+    oc.font = `900 100px "${p.font}"`;
+    const maxW = Math.max(...lines.map(l => oc.measureText(l).width));
+    const fs = 100 * (cols * U * 0.9) / maxW, lineH = fs * 1.05, pad = fs * 0.15;
+    const textH = lines.length * lineH + pad * 2;
+    const capRows = Math.max(1, Math.ceil(textH / (capH * U)));
+    off.width = cols * U; off.height = capRows * capH * U;
+    oc.fillStyle = p.paper; oc.fillRect(0, 0, off.width, off.height);
+    oc.fillStyle = p.ink; oc.font = `900 ${fs}px "${p.font}"`;
+    oc.filter = `blur(${((p.noise * 0.4 + p.hide * 0.5) * U).toFixed(1)}px)`;
+    const y0 = (off.height - textH) / 2 + pad;
+    lines.forEach((l, i) => oc.fillText(l, cols * U * 0.05, y0 + lineH * i + fs * 0.8));
+    oc.filter = 'none';
+    return { pill: { img: off, capH, capRows }, cols, rows: capRows * capH, circles: [], lines: [], squares: [], holes: [], wedges: [], polys: [], rects: null, quads: null, bw: 0 };
+  }
+
+  // Wide separable box blur run 3× (≈ gaussian); radius R in cells
+  function wideBlur(a, cols, rows, R) {
+    const cl = (v, m) => Math.max(0, Math.min(m - 1, v));
+    const boxH = a => { const o = new Float32Array(a.length); for (let r = 0; r < rows; r++) { let sum = 0; for (let c = -R; c <= R; c++) sum += a[r * cols + cl(c, cols)]; for (let c = 0; c < cols; c++) { o[r * cols + c] = sum / (2 * R + 1); sum += a[r * cols + cl(c + R + 1, cols)] - a[r * cols + cl(c - R, cols)]; } } return o; };
+    const boxV = a => { const o = new Float32Array(a.length); for (let c = 0; c < cols; c++) { let sum = 0; for (let r = -R; r <= R; r++) sum += a[cl(r, rows) * cols + c]; for (let r = 0; r < rows; r++) { o[r * cols + c] = sum / (2 * R + 1); sum += a[cl(r + R + 1, rows) * cols + c] - a[cl(r - R, rows) * cols + c]; } } return o; };
+    let t = Float32Array.from(a); for (let k = 0; k < 3; k++) t = boxV(boxH(t)); return t;
+  }
+
+  // Disguise: break the letterforms before any structure sees them — wave shear per row, random dropout inside
+  // the glyph, random salt outside it. Strength h in 0..1.
+  function disguise(grid, h, rng) {
+    if (h <= 0) return grid;
+    const { cols, rows, cov } = grid, out = new Float32Array(cov.length), phase = rng() * 6.28, freq = 0.5 + rng() * 0.6;
+    for (let r = 0; r < rows; r++) {
+      const dx = Math.round(h * 2.5 * Math.sin(r * freq + phase));
+      for (let c = 0; c < cols; c++) { const sc = c - dx; out[r * cols + c] = (sc >= 0 && sc < cols) ? cov[r * cols + sc] : 0; }
+    }
+    for (let i = 0; i < out.length; i++) {
+      if (out[i] > 0.5 && rng() < h * 0.35) out[i] = 0;
+      else if (out[i] < 0.05 && rng() < h * 0.10) out[i] = 0.6 + rng() * 0.4;
+    }
+    return { cols, rows, cov: out };
+  }
+
+  // Decide per cell: 2 = full dot, 1 = small sprinkle, 0 = empty
+  function classify(grid, p, rng) {
+    const { cols, rows, cov } = grid;
+    const cell = new Uint8Array(cols * rows);
+    for (let i = 0; i < cov.length; i++) {
+      const v = cov[i] + (rng() - 0.5) * p.noise;
+      if (v > p.thr) cell[i] = 2;
+      else if (cov[i] > 0.02 && rng() < p.spr * Math.min(1, cov[i] * 2.5)) cell[i] = 1;
+    }
+    return cell;
+  }
+
+  // Build geometry: circles + bridges, in unit-cell coordinates
+  function geometry(grid, cell, p, rng) {
+    const { cols, rows } = grid;
+    const R = p.dot / 2, bw = p.dot * p.bridge;
+    const circles = [], lines = [], squares = [], holes = [], wedges = [];
+    const at = (c, r) => (c >= 0 && r >= 0 && c < cols && r < rows) ? cell[r * cols + c] : 0;
+    if (p.mode === 'lens') {
+      // lens grid: a thin line lattice; on every edge between two cells sits a lens whose width grows with darkness
+      const lenses = [], cov = grid.cov;
+      const hF = Math.min(1, 1 - p.lbias), vF = Math.min(1, 1 + p.lbias);
+      const dark = (a, b) => { const m = (a + b) / 2 + (rng() - 0.5) * p.noise * 0.4; return 0.12 + 0.88 * Math.max(0, Math.min(1, m)); };
+      for (let r = 0; r <= rows; r++) for (let c = 0; c < cols; c++) {
+        const a = r > 0 ? cov[(r - 1) * cols + c] : 0, b = r < rows ? cov[r * cols + c] : 0;
+        const w = Math.min(0.5, 0.5 * p.dot * dark(a, b) * hF);
+        if (w > 0.01) lenses.push([c, r, c + 1, r, w]);
+      }
+      for (let r = 0; r < rows; r++) for (let c = 0; c <= cols; c++) {
+        const a = c > 0 ? cov[r * cols + c - 1] : 0, b = c < cols ? cov[r * cols + c] : 0;
+        const w = Math.min(0.5, 0.5 * p.dot * dark(a, b) * vF);
+        if (w > 0.01) lenses.push([c, r, c, r + 1, w]);
+      }
+      return { circles, lines, squares, holes, wedges, polys: [], lenses, rects: null, bw, cols, rows };
+    }
+    if (p.mode === 'vasa') {
+      // Vasarely-style: every cell is a square plus a half-disc pushed into one neighbour, orientations rotating in a
+      // 2×2 pinwheel; tone comes from softened coverage, quantised to a few greys, with a checker offset for contrast
+      // tone field: the glyph blurred into soft hills, laid over a symmetric diamond gradient (light centre,
+      // dark corners) so the whole sheet reads as one modulated surface, then quantised to a few greys
+      const blur = wideBlur(grid.cov, cols, rows, Math.max(1, Math.round(1 + p.noise * 3)));
+      const field = new Float32Array(blur.length); let fmin = 1e9, fmax = -1e9;
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) { const bg = Math.abs(c / cols - 0.5) + Math.abs(r / rows - 0.5); const v = blur[r * cols + c] + 0.35 * bg; field[r * cols + c] = v; if (v < fmin) fmin = v; if (v > fmax) fmax = v; }
+      const span = Math.max(1e-6, fmax - fmin);
+      const tiles = [], L = p.tones;
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        let t = 0.04 + 0.92 * (field[r * cols + c] - fmin) / span; // normalised so the sheet spans pale → ink
+        // neighbouring tiles alternate around the field so the half-disc joints stay visible even on flat tone
+        t += ((c + r) % 2 ? 1 : -1) * p.spr * 0.3;
+        t = Math.round(Math.max(0, Math.min(1, t)) * (L - 1)) / (L - 1);
+        const q = (c % 2) + 2 * (r % 2);
+        const dir = [0, 1, 3, 2][q]; // 0 right, 1 down, 2 left, 3 up — pinwheel
+        tiles.push([c, r, dir, t]);
+      }
+      return { circles, lines, squares, holes, wedges, polys: [], tiles, rects: null, bw, cols, rows };
+    }
+    if (p.mode === 'quad') {
+      // quadtree: blocks of 8×8 fine cells split where coverage varies; each leaf is a rounded square with a
+      // counter-coloured circle whose size encodes how far the block is from pure black / pure white
+      const S = 8, quads = [], cov = grid.cov;
+      const stats = (x, y, n) => {
+        let mn = 1, mx = 0, sum = 0, k = 0;
+        for (let j = y; j < Math.min(rows, y + n); j++) for (let i = x; i < Math.min(cols, x + n); i++) { const v = cov[j * cols + i]; if (v < mn) mn = v; if (v > mx) mx = v; sum += v; k++; }
+        return { mn, mx, mean: k ? sum / k : 0 };
+      };
+      const split = (x, y, n) => {
+        if (x >= cols || y >= rows) return;
+        const st = stats(x, y, n);
+        const edge = st.mx - st.mn > 0.12, extra = rng() < p.noise * 0.35;
+        if (n > 1 && (edge || extra)) { const h = n / 2; split(x, y, h); split(x + h, y, h); split(x, y + h, h); split(x + h, y + h, h); return; }
+        const m = Math.max(0, Math.min(1, st.mean + (rng() - 0.5) * p.noise * 0.3));
+        const inkBase = m > 0.5;
+        let r = n * 0.42 * p.dot * Math.pow(1 - Math.abs(2 * m - 1), 0.8);
+        if (r < n * 0.06) r = (rng() < p.spr * 0.25) ? n * (0.06 + rng() * 0.08) : 0;
+        quads.push([x, y, n, inkBase, r]);
+      };
+      for (let y = 0; y < rows; y += S) for (let x = 0; x < cols; x += S) split(x, y, S);
+      return { circles, lines, squares, holes, wedges, polys: [], quads, rects: null, bw, cols, rows };
+    }
+    if (p.mode === 'grid') {
+      // stretched grid (reference: warped black lattice with white windows). Column widths / row heights vary in
+      // bands; tone is the glyph blurred into soft hills; each window shrinks with darkness — first its height
+      // (windows become slits), then its width — until only the black lattice remains
+      const cov = Math.floor(p.noise * 2) > 0 ? wideBlur(grid.cov, cols, rows, Math.floor(p.noise * 2)) : Float32Array.from(grid.cov);
+      let cmax = 0; for (let k = 0; k < cov.length; k++) if (cov[k] > cmax) cmax = cov[k]; const cn = cmax > 0 ? 1 / cmax : 1;
+      const bands = n => {
+        const v = new Float32Array(n); let i = 0;
+        while (i < n) { const len = 2 + Math.floor(rng() * 6), val = Math.exp((rng() - 0.5) * 3.2 * p.warp); for (let k = 0; k < len && i < n; k++, i++) v[i] = val; }
+        const sum = v.reduce((a, b) => a + b, 0); for (let k = 0; k < n; k++) v[k] *= n / sum; return v;
+      };
+      const wcol = bands(cols), hrow = bands(rows);
+      const xs = [0], ys = [0];
+      for (let c = 0; c < cols; c++) xs.push(xs[c] + wcol[c]);
+      for (let r = 0; r < rows; r++) ys.push(ys[r] + hrow[r]);
+      const rects = [], g = 0.16 * (1.6 - p.dot);
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const d = Math.max(0, Math.min(1, cov[r * cols + c] * cn * 0.9));
+        const w = wcol[c], h = hrow[r];
+        const sw = w * (1 - g) * (0.45 + 0.55 * Math.pow(1 - d, 0.5)), sh = h * (1 - g) * (0.07 + 0.93 * Math.pow(1 - d, 2.4));
+        if (sw < 0.05 || sh < 0.04) continue;
+        rects.push([xs[c] + (w - sw) / 2, ys[r] + (h - sh) / 2, sw, sh, Math.min(sw, sh) * 0.3]);
+      }
+      return { circles, lines, squares, holes, wedges, polys: [], rects, bw, cols, rows };
+    }
+    if (p.mode === 'quarter') {
+      // halftone with quarter-disc tiles: brightness → number of corners cut in the opposite colour
+      const QR = Math.min(0.5, R);
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const cov = grid.cov[r * cols + c];
+        let k, blackBase;
+        if (cov < 0.02) {
+          // pure background: sparse single black quarter on white, so the glyph stays readable
+          if (rng() >= p.bgd) continue;
+          k = 4; blackBase = false;
+        } else {
+          const bright = 1 - cov + (rng() - 0.5) * p.noise;
+          k = Math.min(4, Math.round(Math.max(0, Math.min(1, bright)) * 5));
+          blackBase = k === 0 ? true : rng() < 0.5;
+        }
+        const cuts = blackBase ? k : 5 - k;
+        if (blackBase) squares.push([c, r, 1]);
+        const corners = [0, 1, 2, 3];
+        for (let i = corners.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [corners[i], corners[j]] = [corners[j], corners[i]]; }
+        for (let i = 0; i < cuts; i++) {
+          const q = corners[i];
+          wedges.push([c + (q & 1), r + (q >> 1), (q & 1) ? -1 : 1, (q >> 1) ? -1 : 1, blackBase ? 1 : 0, QR]);
+        }
+      }
+      return { circles, lines, squares, holes, wedges, polys: [], rects: null, bw, cols, rows };
+    }
+    if (p.mode === 'ascii') {
+      // typewriter halftone: darkness bands become glyphs — dot, a random slash, X, asterisk, solid block.
+      // the glyph is blurred outward so rings of glyphs form around the solid core
+      const raw = grid.cov; let blur = Float32Array.from(raw);
+      const passes = 2 + Math.round(p.noise * 4);
+      for (let k = 0; k < passes; k++) {
+        const nx = new Float32Array(blur.length);
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+          let sum = 0, n = 0;
+          for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const rr = r + j, cc = c + i; if (rr < 0 || cc < 0 || rr >= rows || cc >= cols) continue; sum += blur[rr * cols + cc]; n++; }
+          nx[r * cols + c] = sum / n;
+        }
+        blur = nx;
+      }
+      const glyphs = [];
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const d = Math.max(raw[r * cols + c], blur[r * cols + c] * 1.6) + (rng() - 0.5) * 0.12;
+        let g = d >= 0.95 ? 4 : d >= 0.6 ? 3 : d >= 0.35 ? 2 : d >= 0.12 ? 1 : 0;
+        glyphs.push([c, r, g, rng() < 0.5 ? 1 : -1]);
+      }
+      return { circles, lines, squares, holes, wedges, polys: [], glyphs, rects: null, bw, cols, rows };
+    }
+    if (p.mode === 'motif') {
+      // big tiles (3×3 cells), one bold geometric motif each; darkness picks the motif family (dense ↔ sparse)
+      // and tilts the colour pair toward the dark inks
+      const B = 3, cov = grid.cov, tiles = [];
+      const R2 = Math.ceil(rows / B) * B, C2 = Math.floor(cols / B) * B;
+      for (let by = 0; by < R2; by += B) {
+        for (let bx = 0; bx < C2; bx += B) {
+          let sum = 0, n = 0;
+          for (let j = 0; j < B; j++) for (let i = 0; i < B; i++) { const c = bx + i, r = by + j; if (c < cols && r < rows) { sum += cov[r * cols + c]; n++; } }
+          const d = Math.max(0, Math.min(1, (n ? sum / n : 0) + (rng() - 0.5) * p.noise * 0.4));
+          const fam = d > 0.45 ? ['dots', 'four', 'cstar'] : d > 0.12 ? ['star', 'half', 'cstar', 'four'] : ['blob', 'quarter', 'ring', 'star'];
+          const motif = fam[Math.floor(rng() * fam.length)];
+          // palette indices: 0 ink 1 ink2 2 ink3 3 paper 4 tint(ink) 5 tint(ink2)
+          const darkPick = () => [0, 1, 2][Math.floor(rng() * 3)], lightPick = () => [3, 4, 5][Math.floor(rng() * 3)];
+          let base, fig;
+          if (rng() < 0.35 + 0.4 * d) { base = darkPick(); fig = lightPick(); } else { base = lightPick(); fig = darkPick(); }
+          tiles.push({ x: bx, y: by, motif, base, fig, q: Math.floor(rng() * 4), third: rng() < 0.5 ? darkPick() : lightPick() });
+        }
+      }
+      return { circles, lines, squares, holes, wedges, polys: [], motifs: { B, tiles }, rects: null, bw, cols: C2, rows: R2 };
+    }
+    if (p.mode === 'tri') {
+      // woven zigzag: 4×4 blocks; each block's darkness picks the triangle base (4, 2 or 1 cells) and the strips of
+      // alternating up/down triangles are coloured with the two inks; pale dots sit on the strip lines' vertices
+      const B = 4, cov = grid.cov, blocks = [];
+      for (let by = 0; by < rows; by += B) for (let bx = 0; bx < cols; bx += B) {
+        let sum = 0, n = 0;
+        for (let j = 0; j < B; j++) for (let i = 0; i < B; i++) { const c = bx + i, r = by + j; if (c < cols && r < rows) { sum += cov[r * cols + c]; n++; } }
+        const d = Math.max(0, Math.min(1, (n ? sum / n : 0) + (rng() - 0.5) * p.noise * 0.4));
+        const k = d > 0.3 ? 1 : d > 0.08 ? 2 : 4, h = k === 1 ? 2 : 4;
+        const strips = [];
+        for (let y = by; y < Math.min(rows, by + B); y += h) strips.push([y, Math.min(h, rows - y), rng() < 0.5, rng() < 0.6]);
+        blocks.push({ x: bx, y: by, w: Math.min(B, cols - bx), h: Math.min(B, rows - by), k, strips });
+      }
+      return { circles, lines, squares, holes, wedges, polys: [], tri: blocks, rects: null, bw, cols, rows };
+    }
+    if (p.mode === 'patch') {
+      // patchwork: the field is cut into rectangles; each gets its own cell size, colour, mark style and sometimes
+      // an inverted ground. Marks are rounded X's whose thickness follows darkness; near-white cells get a pin dot.
+      const cov = grid.cov, rects = [];
+      const split = (x, y, w, h, depth) => {
+        if (depth <= 0 || (w < 6 && h < 6) || (depth < 3 && rng() < 0.3)) { rects.push([x, y, w, h]); return; }
+        if (w >= h) { const t = Math.round(w * (0.3 + rng() * 0.4)); split(x, y, t, h, depth - 1); split(x + t, y, w - t, h, depth - 1); }
+        else { const t = Math.round(h * (0.3 + rng() * 0.4)); split(x, y, w, t, depth - 1); split(x, y + t, w, h - t, depth - 1); }
+      };
+      split(0, 0, cols, rows, 4);
+      const patches = rects.map(([x, y, w, h]) => {
+        const k = [1, 1, 2, 2, 3][Math.floor(rng() * 5)], colr = Math.floor(rng() * 3), style = ['x', 'x', 'xfat', 'dot'][Math.floor(rng() * 4)];
+        const invert = rng() < 0.22, ex = rng() * 1.5, ey = rng() * 1.5;
+        const X0 = Math.max(0, x - ex), Y0 = Math.max(0, y - ey), X1 = Math.min(cols, x + w + ex), Y1 = Math.min(rows, y + h + ey);
+        const marks = [];
+        for (let yy = Y0; yy < Y1; yy += k) for (let xx = X0; xx < X1; xx += k) {
+          let sum = 0, n = 0;
+          for (let j = 0; j < k; j++) for (let i = 0; i < k; i++) { const c = Math.floor(xx + i), r = Math.floor(yy + j); if (c < cols && r < rows) { sum += cov[r * cols + c]; n++; } }
+          const d = Math.max(0, Math.min(1, (n ? sum / n : 0) + (rng() - 0.5) * p.noise * 0.3));
+          marks.push([xx + k / 2, yy + k / 2, d]);
+        }
+        return { X0, Y0, X1, Y1, k, colr, style, invert, marks };
+      });
+      return { circles, lines, squares, holes, wedges, polys: [], patches, rects: null, bw, cols, rows };
+    }
+    if (p.mode === 'star') {
+      // 45°-rotated lattice of rounded squares on an ink ground: the corner radius grows with darkness, so the
+      // uncovered four-point stars at the vertices swell where the glyph is; a 2× lattice of outlines sits on top
+      const cx = cols / 2, cy = rows / 2, Rr = Math.ceil(Math.hypot(cols, rows) / 2) + 2;
+      const cov = wideBlur(grid.cov, cols, rows, Math.max(1, Math.round(1 + p.noise * 3))); // soft hills, never letterforms
+      let cmax = 0; for (let k = 0; k < cov.length; k++) if (cov[k] > cmax) cmax = cov[k]; const cnorm = cmax > 0 ? 1 / cmax : 1;
+      const cs = Math.SQRT1_2, sn = Math.SQRT1_2;
+      const sample = (u, v) => { // rotated lattice coords → world → coverage
+        const x = cx + u * cs - v * sn, y = cy + u * sn + v * cs;
+        const c = Math.floor(x), r = Math.floor(y);
+        return (c >= 0 && r >= 0 && c < cols && r < rows) ? cov[r * cols + c] : 0;
+      };
+      const small = [], big = [];
+      const soft = (u, v) => Math.min(1, sample(u, v) * cnorm);
+      for (let j = -Rr; j < Rr; j++) for (let i = -Rr; i < Rr; i++) {
+        // one even lattice everywhere; the text only breathes into it as a gentle swelling of the corner radius
+        const d = soft(i + 0.5, j + 0.5);
+        small.push([i, j, (0.12 + 0.3 * d) * p.dot, 0.04]);
+        if (((i + Rr) % 2 === 0) && ((j + Rr) % 2 === 0)) {
+          const D = soft(i + 1, j + 1);
+          big.push([i, j, (0.3 + 0.6 * D) * p.dot, 0.045]);
+        }
+      }
+      return { circles, lines, squares, holes, wedges, polys: [], star: { small, big, cx, cy }, rects: null, bw, cols, rows };
+    }
+    if (p.mode === 'pix') {
+      // rounded pixel blob: filled cells fuse into one shape; convex corners are rounded outward, and the inner
+      // corners where two filled cells meet diagonally-empty get a concave fillet — a chunky pixel typeface look
+      const rr = Math.min(0.5, 0.36 * p.dot), cvx = [], ccv = [];
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const v = at(c, r) === 2;
+        if (v) squares.push([c - 0.01, r - 0.01, 1.02]);
+        for (let q = 0; q < 4; q++) {
+          const sx = (q & 1) ? 1 : -1, sy = (q >> 1) ? 1 : -1;
+          const nx = at(c + sx, r) === 2, ny = at(c, r + sy) === 2, nd = at(c + sx, r + sy) === 2;
+          const px = c + (q & 1), py = r + (q >> 1); // corner point
+          if (v && !nx && !ny) cvx.push([px, py, sx, sy]);
+          if (!v && nx && ny && nd) ccv.push([px, py, sx, sy]);
+        }
+      }
+      return { circles, lines, squares, holes, wedges, pix: { rr, cvx, ccv }, polys: [], rects: null, bw, cols, rows };
+    }
+    if (p.mode === 'stamp') {
+      // ceramic tiles: 3×3-cell rounded ink squares with paper cut-outs. Darkness decides how much is cut away —
+      // dark: a hairline; mid: a circle, a slit with a dot, or a split into rounded blocks; light: an X of gaps or
+      // the tile inverted to paper with an ink disc; empty ground stays paper
+      const B = 3, cov = grid.cov, tiles = [];
+      const R2 = Math.floor(rows / B) * B, C2 = Math.floor(cols / B) * B;
+      for (let by = 0; by < R2; by += B) for (let bx = 0; bx < C2; bx += B) {
+        let sum = 0; for (let j = 0; j < B; j++) for (let i = 0; i < B; i++) sum += cov[(by + j) * cols + bx + i];
+        const d = Math.max(0, Math.min(1, sum / (B * B) + (rng() - 0.5) * p.noise * 0.4));
+        if (d < 0.08 && rng() > p.bgd * 0.6) continue;
+        const fam = d > 0.7 ? ['line', 'line', 'linedot', 'solid'] : d > 0.4 ? ['circle', 'linedot', 'split', 'line'] : d > 0.15 ? ['split', 'cross', 'circle', 'inv'] : ['inv', 'cross', 'split'];
+        tiles.push({ x: bx, y: by, kind: fam[Math.floor(rng() * fam.length)], rot: Math.floor(rng() * 4), s: rng() });
+      }
+      return { circles, lines, squares, holes, wedges, stamp: { B, tiles }, polys: [], rects: null, bw, cols: C2, rows: R2 };
+    }
+    if (p.mode === 'cube') {
+      // cube halftone: a pointy-top hex lattice, each hex split into three rhombic faces meeting at the centre.
+      // Each face shrinks from a full rhombus (dark) toward a thin chevron along its two outer edges (light)
+      const cov = wideBlur(grid.cov, cols, rows, Math.max(1, Math.round(0.5 + p.noise * 2)));
+      let cmax = 0; for (let k = 0; k < cov.length; k++) if (cov[k] > cmax) cmax = cov[k]; const cn = cmax > 0 ? 1 / cmax : 1;
+      const R = 0.62, W = Math.sqrt(3) * R, faces = [];
+      for (let j = -1, y = 0; y < rows + R; j++, y += 1.5 * R) {
+        const off = (j & 1) ? W / 2 : 0;
+        for (let x = off - W; x < cols + W; x += W) {
+          const c = Math.floor(x), r = Math.floor(y);
+          const g = (c >= 0 && r >= 0 && c < cols && r < rows) ? cov[r * cols + c] * cn : 0;
+          const d = Math.max(0, Math.min(1, g * 1.1 + Math.max(0, 1 - x / cols) * p.spr * 0.5 + (rng() - 0.5) * p.noise * 0.15));
+          if (d < 0.1) continue; // no lattice in the empty ground — only the glyph's halo of bars
+          const V = []; for (let k = 0; k < 6; k++) { const a = Math.PI / 6 + k * Math.PI / 3; V.push([x + R * Math.cos(a), y + R * Math.sin(a)]); }
+          for (let f = 0; f < 3; f++) faces.push([x, y, V[2 * f], V[2 * f + 1], V[(2 * f + 2) % 6], d]);
+        }
+      }
+      return { circles, lines, squares, holes, wedges, cube: faces, polys: [], rects: null, bw, cols, rows };
+    }
+    if (p.mode === 'rhomb') {
+      // isometric rhombi on a triangular lattice: three orientations (the faces of a cube), scattered with a
+      // probability that follows the blurred glyph plus a top→bottom fade; a few are clipped to triangles
+      // elements live only on the glyph: full lattice inside, thinning out at the edge — no background scatter
+      const cov = wideBlur(grid.cov, cols, rows, 1);
+      let cmax = 0; for (let k = 0; k < cov.length; k++) if (cov[k] > cmax) cmax = cov[k]; const cn = cmax > 0 ? 1 / cmax : 1;
+      const S = 1, H = S * Math.sqrt(3) / 2, rh = [];
+      const SQ3 = Math.sqrt(3);
+      for (let j = -1, y = 0; y < rows + H; j++, y += H) {
+        const off = (j & 1) ? S / 2 : 0;
+        for (let x = off - S; x < cols + S; x += S) {
+          const c = Math.floor(x), r = Math.floor(y);
+          const g = (c >= 0 && r >= 0 && c < cols && r < rows) ? cov[r * cols + c] * cn : 0;
+          const fade = Math.max(0, 1 - y / rows) * p.spr;
+          const dens = Math.min(1, Math.pow(g, 0.6) * 1.05 + fade);
+          if (dens < 0.12 || rng() > dens) continue;
+          const o = Math.floor(rng() * 3), tri = rng() < 0.15 ? 1 + Math.floor(rng() * 2) : 0;
+          rh.push([x, y, o, tri]);
+        }
+      }
+      return { circles, lines, squares, holes, wedges, rhomb: rh, polys: [], rects: null, bw, cols, rows };
+    }
+    if (p.mode === 'poster') {
+      // poster composition: sparse, large. Each glyph cell becomes one quarter disc of radius 1, its corner chosen so
+      // neighbouring discs join into half and full circles; a few cells stay square or split into a checker; thin
+      // quarter-arc lines drift in the empty cells nearby
+      const arcs = [];
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const v = at(c, r);
+        if (v === 2) {
+          const u = rng();
+          if (u < 0.12) { squares.push([c, r, 1]); continue; }
+          // corner toward the most filled neighbours
+          let best = 0, bs = -1;
+          for (let q = 0; q < 4; q++) {
+            const sx = (q & 1) ? 1 : -1, sy = (q >> 1) ? 1 : -1;
+            const sc = (at(c + sx, r) === 2) + (at(c, r + sy) === 2) + (at(c + sx, r + sy) === 2) * 0.5 + rng() * 0.6;
+            if (sc > bs) { bs = sc; best = q; }
+          }
+          const q = best, sx = (q & 1) ? 1 : -1, sy = (q >> 1) ? 1 : -1;
+          if (u < 0.24) { // checker: ink square with a paper quarter from the opposite corner
+            squares.push([c, r, 1]);
+            wedges.push([c + (1 - (q & 1)), r + (1 - (q >> 1)), -sx, -sy, 1, 1]);
+          } else wedges.push([c + (q & 1), r + (q >> 1), sx, sy, 0, 1]);
+        } else if (v === 0) {
+          let near = false;
+          for (let q = 0; q < 4 && !near; q++) { const sx = (q & 1) ? 1 : -1, sy = (q >> 1) ? 1 : -1; if (at(c + sx, r) === 2 || at(c, r + sy) === 2) near = true; }
+          // a few lone quarter discs drift into the empty cells around the glyph instead of thin arcs
+          if (near && rng() < 0.06 * p.bgd) { const q = Math.floor(rng() * 4); wedges.push([c + (q & 1), r + (q >> 1), (q & 1) ? -1 : 1, (q >> 1) ? -1 : 1, 0, 1]); }
+        }
+      }
+      return { circles, lines, squares, holes, wedges, arcs, polys: [], rects: null, bw, cols, rows };
+    }
+    if (p.mode === 'bau') {
+      // tile wall: every cell is a white tile; glyph cells (most of them) and a few background tiles get one
+      // ink shape — a quarter disc of radius 1 in a corner, or a half disc of radius ½ on a side — at random
+      const halves = [];
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const v = at(c, r);
+        const place = v === 2 ? rng() < 0.75 : rng() < p.bgd * 0.5;
+        if (!place) continue;
+        if (rng() < 0.6) { const q = Math.floor(rng() * 4); wedges.push([c + (q & 1), r + (q >> 1), (q & 1) ? -1 : 1, (q >> 1) ? -1 : 1, 0, 1]); }
+        else halves.push([c, r, Math.floor(rng() * 4)]);
+      }
+      return { circles, lines, squares, holes, wedges, halves, polys: [], rects: null, bw, cols, rows };
+    }
+    if (p.mode === 'bayer') {
+      // ordered dither: the glyph is blurred into a soft cloud, a dark floor gradient is added, and an 8×8 Bayer
+      // matrix decides each fine cell. Light areas get small ink squares; dark areas go solid with paper pinholes.
+      let tone = Float32Array.from(grid.cov);
+      const Rb = Math.round(3 + p.noise * 8); // wide separable box blur, run 3× ≈ gaussian
+      const boxH = a => { const o = new Float32Array(a.length); for (let r = 0; r < rows; r++) { let sum = 0; for (let c = -Rb; c <= Rb; c++) sum += a[r * cols + Math.max(0, Math.min(cols - 1, c))]; for (let c = 0; c < cols; c++) { o[r * cols + c] = sum / (2 * Rb + 1); sum += a[r * cols + Math.max(0, Math.min(cols - 1, c + Rb + 1))] - a[r * cols + Math.max(0, Math.min(cols - 1, c - Rb))]; } } return o; };
+      const boxV = a => { const o = new Float32Array(a.length); for (let c = 0; c < cols; c++) { let sum = 0; for (let r = -Rb; r <= Rb; r++) sum += a[Math.max(0, Math.min(rows - 1, r)) * cols + c]; for (let r = 0; r < rows; r++) { o[r * cols + c] = sum / (2 * Rb + 1); sum += a[Math.max(0, Math.min(rows - 1, r + Rb + 1)) * cols + c] - a[Math.max(0, Math.min(rows - 1, r - Rb)) * cols + c]; } } return o; };
+      for (let k = 0; k < 3; k++) tone = boxV(boxH(tone));
+      const M = [[0, 32, 8, 40, 2, 34, 10, 42], [48, 16, 56, 24, 50, 18, 58, 26], [12, 44, 4, 36, 14, 46, 6, 38], [60, 28, 52, 20, 62, 30, 54, 22], [3, 35, 11, 43, 1, 33, 9, 41], [51, 19, 59, 27, 49, 17, 57, 25], [15, 47, 7, 39, 13, 45, 5, 37], [63, 31, 55, 23, 61, 29, 53, 21]];
+      const px = [];
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const floor = Math.pow(r / rows, 2.2) * p.spr * 1.6;
+        const t = Math.min(1, Math.min(1, tone[r * cols + c] * 1.6) + floor);
+        const on = t > (M[r % 8][c % 8] + 0.5) / 64;
+        const dark = t >= 0.5;
+        if (dark) { if (!on) px.push([c, r, 1]); } else if (on) px.push([c, r, 0]);
+        if (dark) px.push([c, r, 2]);
+      }
+      return { circles, lines, squares, holes, wedges, polys: [], pixels: px, rects: null, bw, cols, rows };
+    }
+    if (p.mode === 'iso') {
+      // isometric facades: vertical bands, each a sheared face with its own roof line; dots are parallelograms on
+      // the face's sheared grid, sized by the glyph's darkness plus a fade that starts dark at the roof
+      const cov = grid.cov, faces = [];
+      const soft = (x, y) => { let sum = 0, n = 0; for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const c = Math.floor(x) + i, r = Math.floor(y) + j; if (c >= 0 && r >= 0 && c < cols && r < rows) { sum += cov[r * cols + c]; n++; } } return n ? sum / n : 0; };
+      let x = 0;
+      while (x < cols) {
+        const w = Math.min(cols - x, 3 + Math.floor(rng() * 5)), sgn = rng() < 0.5 ? 1 : -1, sk = sgn * (0.35 + rng() * 0.3);
+        const base = rng() * rows * 0.3, roof = xx => base + sk * (xx - x) + (sk < 0 ? -sk * w : 0);
+        const dots = [];
+        const yStart = Math.min(roof(x), roof(x + w));
+        for (let i = 0; i < w; i++) for (let jy = -1; jy < rows - yStart + 1; jy++) {
+          const xc = x + i + 0.5, yc = yStart + jy + 0.5 + sk * (i + 0.5) - (sk < 0 ? sk * w : 0);
+          if (yc < roof(xc) + 0.2 || yc > rows) continue;
+          const depth = (yc - roof(xc)) / (rows * 0.3);
+          const fade = Math.max(0, 1 - depth) ** 2 * 0.95;
+          const d = Math.max(Math.min(1, soft(xc, yc) * 1.3), fade) + (rng() - 0.5) * p.noise * 0.2;
+          const wdt = Math.max(0, Math.min(0.88, d * 0.9 * p.dot));
+          if (wdt > 0.04) dots.push([xc, yc, wdt]);
+        }
+        faces.push({ x0: x, x1: x + w, sk, roofA: roof(x), roofB: roof(x + w), dots });
+        x += w;
+      }
+      return { circles, lines, squares, holes, wedges, polys: [], faces, rects: null, bw, cols, rows };
+    }
+    if (p.mode === 'drop') {
+      // folded discs: a circle with one square corner, shaded by an angular gradient that turns from pale to ink
+      // around the centre, seam at the square corner. Placed sparsely on 2-cell steps where the glyph is.
+      const cov = grid.cov, drops = [];
+      for (let r = 0; r + 2 <= rows; r += 2) for (let c = 0; c + 2 <= cols; c += 2) {
+        const d = (cov[r * cols + c] + cov[r * cols + c + 1] + cov[(r + 1) * cols + c] + cov[(r + 1) * cols + c + 1]) / 4;
+        const place = d > 0.3 ? rng() < 0.55 : rng() < p.bgd * 0.15;
+        if (!place) continue;
+        drops.push([c + 1 + (rng() - 0.5) * 0.5, r + 1 + (rng() - 0.5) * 0.5, 0.95 * p.dot, Math.floor(rng() * 4)]);
+      }
+      const line = [rng() * cols * 0.3, rows, cols, -rng() * rows * 0.5];
+      return { circles, lines, squares, holes, wedges, polys: [], drops, line, rects: null, bw, cols, rows };
+    }
+    if (p.mode === 'blocks') {
+      // 2×2 tiles: darkness picks how many quadrants are inked (1, half, or L); exposed convex corners are
+      // sometimes rounded, and the inner corner of an L gets a concave fillet — shapes join across tile edges
+      const cov = grid.cov, pSquares = [];
+      const filled = new Uint8Array(cols * rows);
+      const R2 = Math.floor(rows / 2) * 2, C2 = Math.floor(cols / 2) * 2;
+      for (let by = 0; by < R2; by += 2) for (let bx = 0; bx < C2; bx += 2) {
+        const d = Math.max(0, Math.min(1, (cov[by * cols + bx] + cov[by * cols + bx + 1] + cov[(by + 1) * cols + bx] + cov[(by + 1) * cols + bx + 1]) / 4 + (rng() - 0.5) * p.noise * 0.4));
+        const u = rng();
+        const n = d >= 0.6 ? (u < 0.5 ? 3 : 2) : d >= 0.25 ? (u < 0.5 ? 2 : u < 0.85 ? 1 : 3) : (u < 0.5 ? 1 : u < 0.8 ? 2 : 0);
+        const qs = [0, 1, 2, 3];
+        let pick = [];
+        if (n === 1) pick = [Math.floor(rng() * 4)];
+        else if (n === 2) pick = [[0, 1], [2, 3], [0, 2], [1, 3]][Math.floor(rng() * 4)];
+        else if (n === 3) { const omit = Math.floor(rng() * 4); pick = qs.filter(q => q !== omit); }
+        pick.forEach(q => { filled[(by + (q >> 1)) * cols + bx + (q & 1)] = 1; });
+      }
+      const F = (c, r) => (c >= 0 && r >= 0 && c < C2 && r < R2) ? filled[r * cols + c] : 0;
+      for (let r = 0; r < R2; r++) for (let c = 0; c < C2; c++) {
+        if (F(c, r)) {
+          squares.push([c, r, 1.0]);
+          for (let q = 0; q < 4; q++) {
+            const sx = (q & 1) ? 1 : -1, sy = (q >> 1) ? 1 : -1;
+            if (!F(c + sx, r) && !F(c, r + sy) && rng() < 0.55) {
+              pSquares.push([c + (q & 1) * 0.5, r + (q >> 1) * 0.5, 0.5]); circles.push([c + 0.5, r + 0.5, 0.5]);
+            }
+          }
+        } else {
+          for (let q = 0; q < 4; q++) {
+            const sx = (q & 1) ? 1 : -1, sy = (q >> 1) ? 1 : -1;
+            if (F(c + sx, r) && F(c, r + sy) && F(c + sx, r + sy) && rng() < 0.8) { squares.push([c + (q & 1) * 0.5, r + (q >> 1) * 0.5, 0.5]); holes.push([c + 0.5, r + 0.5, 0.5]); break; }
+          }
+        }
+      }
+      return { circles, lines, squares, holes, wedges, polys: [], pSquares, grout: 2, rects: null, bw, cols: C2, rows: R2 };
+    }
+    if (p.mode === 'moon') {
+      // every cell is a square split by a quarter disc of radius 1 at one corner; the glyph decides which colour
+      // is the ground and which the disc, and 2×2 blocks usually point their corners inward so full circles form
+      const ptsIn = 0.72;
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const inkBase = at(c, r) === 2;
+        let q = (c % 2 === 0 ? 1 : 0) + (r % 2 === 0 ? 2 : 0);
+        if (rng() > ptsIn) q = Math.floor(rng() * 4);
+        if (inkBase) squares.push([c, r, 1.02]);
+        wedges.push([c + (q & 1), r + (q >> 1), (q & 1) ? -1 : 1, (q >> 1) ? -1 : 1, inkBase ? 1 : 0, 1]);
+      }
+      return { circles, lines, squares, holes, wedges, polys: [], rects: null, bw, cols, rows };
+    }
+    if (p.mode === 'neg') {
+      // filled cells become squares; white circles at every grid vertex eat the corners
+      const vset = new Set();
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+        const v = at(c, r); if (!v) continue;
+        if (v === 2) {
+          squares.push([c, r, 1]);
+          vset.add(c + ',' + r); vset.add((c + 1) + ',' + r); vset.add(c + ',' + (r + 1)); vset.add((c + 1) + ',' + (r + 1));
+        } else squares.push([c + 0.35, r + 0.35, 0.3]);
+      }
+      vset.forEach(k => { const [x, y] = k.split(',').map(Number); holes.push([x, y, R]); });
+      return { circles, lines, squares, holes, wedges, polys: [], rects: null, bw, cols, rows };
+    }
+    const b = bw / 2, polys = [];
+    // smooth neck between two circles: a bar of half-width b blended into each circle by a concave fillet of radius f
+    const neckHalf = (d, f) => {
+      if (b >= R - 1e-4) return [[0, R], [d, R]];
+      const fstar = (d * d / 4 - R * R + b * b) / (2 * (R - b));
+      f = Math.min(f, fstar);
+      if (f <= 1e-4) { const x0 = Math.sqrt(Math.max(0, R * R - b * b)); return [[x0, b], [d - x0, b]]; }
+      const xf = Math.sqrt((R + f) ** 2 - (b + f) ** 2), fy = b + f;
+      const a0 = Math.atan2(-fy, -xf), a1 = -Math.PI / 2, n = 7, left = [];
+      for (let i = 0; i <= n; i++) { const a = a0 + (a1 - a0) * i / n; left.push([xf + f * Math.cos(a), fy + f * Math.sin(a)]); }
+      const right = left.map(([x, y]) => [d - x, y]).reverse();
+      return left.concat(right);
+    };
+    const neck = (x1, y1, x2, y2) => {
+      const dx = x2 - x1, dy = y2 - y1, d = Math.hypot(dx, dy), ca = dx / d, sa = dy / d;
+      const top = neckHalf(d, p.smooth), bot = top.map(([x, y]) => [x, -y]).reverse();
+      polys.push(top.concat(bot).map(([x, y]) => [x1 + x * ca - y * sa, y1 + x * sa + y * ca]));
+    };
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const v = at(c, r); if (!v) continue;
+      const x = c + 0.5, y = r + 0.5;
+      circles.push([x, y, v === 2 ? R : R * 0.42]);
+      if (v !== 2 || bw <= 0) continue;
+      if (at(c + 1, r) === 2) neck(x, y, x + 1, y);
+      if (at(c, r + 1) === 2) neck(x, y, x, y + 1);
+      if (p.diag) {
+        if (at(c + 1, r + 1) === 2) neck(x, y, x + 1, y + 1);
+        if (at(c - 1, r + 1) === 2) neck(x, y, x - 1, y + 1);
+      }
+    }
+    return { circles, lines, squares, holes, wedges, polys, rects: null, bw, cols, rows };
+  }
+
+  function build(p) {
+    const rng = mulberry32(p.seed * 7919);
+    const levels = [];
+    for (let i = 0; i < p.levels; i++) {
+      const cols = Math.min(300, Math.max(4, Math.round(p.cols * Math.pow(p.mul, i))));
+      if (p.mode === 'pill') { const lv = pillLevel(p, cols); if (lv) levels.push(lv); continue; }
+      const grid = disguise(coverageGrid(p.text, p.font, p.mode === 'quad' ? cols * 8 : p.mode === 'bayer' ? cols * 4 : cols), p.hide, rng);
+      if (!grid.rows) continue;
+      levels.push(geometry(grid, classify(grid, p, rng), p, rng));
+    }
+    return levels;
+  }
+
+  function render() {
+    const p = params();
+    const levels = build(p);
+    const W = $('stage').clientWidth || 800;
+    const gap = 0.06; // fraction of width between levels
+    const heights = levels.map(l => W / l.cols * l.rows);
+    const H = heights.reduce((a, b) => a + b, 0) + W * gap * (levels.length + 1);
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    cv.style.height = H + 'px';
+    $('stage').style.setProperty('--stageBg', p.paper);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = p.paper; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = p.ink; ctx.strokeStyle = p.ink; ctx.lineCap = 'round';
+
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W.toFixed(0)}" height="${H.toFixed(0)}" viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}">\n<rect width="100%" height="100%" fill="${p.paper}"/>\n`;
+    let y0 = W * gap, dots = 0, hasRaster = false;
+    levels.forEach((l, i) => {
+      const s = W / l.cols;
+      svgOn && (svg += `<g fill="${p.ink}" stroke="${p.ink}" stroke-linecap="round" stroke-width="${(l.bw * s).toFixed(2)}" transform="translate(0 ${y0.toFixed(2)}) scale(${s.toFixed(4)})">\n`);
+      ctx.save(); ctx.translate(0, y0); ctx.scale(s, s);
+      ctx.lineWidth = l.bw;
+      if (l.pill) {
+        const dw = Math.min(0.98, p.dot), gapY = 0.14, capH = l.pill.capH;
+        for (let j = 0; j < l.pill.capRows; j++) for (let i = 0; i < l.cols; i++) {
+          const x = i + (1 - dw) / 2, y = j * capH + gapY / 2, h = capH - gapY, cx = i + 0.5;
+          ctx.save(); ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(x, y, dw, h, dw / 2); else ctx.rect(x, y, dw, h);
+          ctx.clip();
+          ctx.translate(cx, 0); ctx.scale(p.refr, 1); ctx.translate(-cx, 0);
+          ctx.drawImage(l.pill.img, 0, 0, l.cols, l.rows);
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.translate(0, y0); ctx.scale(s, s);
+          const g = ctx.createLinearGradient(x, 0, x + dw, 0);
+          g.addColorStop(0, 'rgba(0,0,0,0.45)'); g.addColorStop(0.22, 'rgba(0,0,0,0)'); g.addColorStop(0.55, 'rgba(255,255,255,0.18)'); g.addColorStop(0.8, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.5)');
+          ctx.fillStyle = g; ctx.fillRect(x, y, dw, h);
+          ctx.restore();
+          ctx.save(); ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(x, y, dw, h, dw / 2); else ctx.rect(x, y, dw, h);
+          ctx.strokeStyle = p.ink; ctx.globalAlpha = 0.18; ctx.lineWidth = 0.03; ctx.stroke(); ctx.restore();
+        }
+        ctx.fillStyle = p.ink; ctx.strokeStyle = p.ink;
+        dots += l.cols * l.pill.capRows;
+        hasRaster = true;
+      }
+      if (l.lenses) {
+        ctx.save(); ctx.strokeStyle = p.ink; ctx.lineWidth = 0.035; ctx.beginPath();
+        for (let r = 0; r <= l.rows; r++) { ctx.moveTo(0, r); ctx.lineTo(l.cols, r); svgOn && (svg += `<line x1="0" y1="${r}" x2="${l.cols}" y2="${r}" stroke-width="0.035" stroke-linecap="butt"/>\n`); }
+        for (let c = 0; c <= l.cols; c++) { ctx.moveTo(c, 0); ctx.lineTo(c, l.rows); svgOn && (svg += `<line x1="${c}" y1="0" x2="${c}" y2="${l.rows}" stroke-width="0.035" stroke-linecap="butt"/>\n`); }
+        ctx.stroke(); ctx.restore();
+        ctx.beginPath();
+        l.lenses.forEach(([x1, y1, x2, y2, w]) => {
+          const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, nx = -(y2 - y1), ny = x2 - x1; // unit normal (edges are length 1)
+          const c1x = mx + nx * 2 * w, c1y = my + ny * 2 * w, c2x = mx - nx * 2 * w, c2y = my - ny * 2 * w;
+          ctx.moveTo(x1, y1); ctx.quadraticCurveTo(c1x, c1y, x2, y2); ctx.quadraticCurveTo(c2x, c2y, x1, y1);
+          svgOn && (svg += `<path d="M${x1} ${y1} Q${c1x.toFixed(3)} ${c1y.toFixed(3)} ${x2} ${y2} Q${c2x.toFixed(3)} ${c2y.toFixed(3)} ${x1} ${y1} Z" stroke="none"/>\n`);
+        });
+        ctx.fill();
+        dots += l.lenses.length;
+      }
+      if (l.tiles) {
+        const mix = t => { const a = hex(p.paper), b = hex(p.ink); return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',')})`; };
+        const cache = {};
+        const col = t => cache[t] || (cache[t] = mix(t));
+        l.tiles.forEach(([x, y, d, t]) => { ctx.fillStyle = col(t); ctx.fillRect(x, y, 1.02, 1.02); svgOn && (svg += `<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${col(t)}" stroke="none"/>\n`); });
+        const off = [[1, 0.5], [0.5, 1], [0, 0.5], [0.5, 0]];
+        l.tiles.forEach(([x, y, d, t]) => {
+          const cx = x + off[d][0], cy = y + off[d][1];
+          ctx.fillStyle = col(t); ctx.beginPath(); ctx.arc(cx, cy, 0.5 * Math.min(1, p.dot), 0, Math.PI * 2); ctx.fill();
+          svgOn && (svg += `<circle cx="${cx}" cy="${cy}" r="${(0.5 * Math.min(1, p.dot)).toFixed(3)}" fill="${col(t)}" stroke="none"/>\n`);
+        });
+        ctx.fillStyle = p.ink;
+        dots += l.tiles.length;
+      }
+      if (l.quads) {
+        const gap = 0.22;
+        l.quads.forEach(([x, y, n, inkBase, r]) => {
+          const base = inkBase ? p.ink : p.paper, top = inkBase ? p.paper : p.ink, rx = n * 0.18;
+          ctx.fillStyle = base; ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(x + gap / 2, y + gap / 2, n - gap, n - gap, rx); else ctx.rect(x + gap / 2, y + gap / 2, n - gap, n - gap);
+          ctx.fill(); ctx.strokeStyle = top; ctx.lineWidth = 0.1; ctx.stroke();
+          svgOn && (svg += `<rect x="${(x + gap / 2).toFixed(3)}" y="${(y + gap / 2).toFixed(3)}" width="${(n - gap).toFixed(3)}" height="${(n - gap).toFixed(3)}" rx="${rx.toFixed(3)}" fill="${base}" stroke="${top}" stroke-width="0.1"/>\n`);
+          if (r > 0) {
+            ctx.fillStyle = top; ctx.beginPath(); ctx.arc(x + n / 2, y + n / 2, r, 0, Math.PI * 2); ctx.fill();
+            svgOn && (svg += `<circle cx="${(x + n / 2).toFixed(3)}" cy="${(y + n / 2).toFixed(3)}" r="${r.toFixed(3)}" fill="${top}" stroke="none"/>\n`);
+          }
+        });
+        ctx.fillStyle = p.ink; ctx.strokeStyle = p.ink;
+        dots += l.quads.length;
+      }
+      if (l.rects) {
+        ctx.fillStyle = p.ink; ctx.fillRect(0, 0, l.cols, l.rows);
+        svgOn && (svg += `<rect x="0" y="0" width="${l.cols}" height="${l.rows}" stroke="none"/>\n`);
+        ctx.save(); ctx.fillStyle = p.paper; ctx.beginPath();
+        l.rects.forEach(([x, y, w, h, rx]) => {
+          if (ctx.roundRect) ctx.roundRect(x, y, w, h, rx); else ctx.rect(x, y, w, h);
+          svgOn && (svg += `<rect x="${x.toFixed(3)}" y="${y.toFixed(3)}" width="${w.toFixed(3)}" height="${h.toFixed(3)}" rx="${rx.toFixed(3)}" fill="${p.paper}" stroke="none"/>\n`);
+        });
+        ctx.fill(); ctx.restore();
+        dots += l.rects.length;
+      }
+      if (l.squares.length) {
+        ctx.beginPath();
+        l.squares.forEach(([x, y, w]) => { ctx.rect(x, y, w, w); svgOn && (svg += `<rect x="${x}" y="${y}" width="${w}" height="${w}" stroke="none"/>\n`); });
+        ctx.fill();
+        ctx.save(); ctx.fillStyle = p.paper; ctx.beginPath();
+        l.holes.forEach(([x, y, r]) => { ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, Math.PI * 2); svgOn && (svg += `<circle cx="${x}" cy="${y}" r="${r.toFixed(3)}" fill="${p.paper}" stroke="none"/>\n`); });
+        ctx.fill(); ctx.restore();
+      }
+      if (l.pixels) {
+        const sq = Math.min(0.98, 0.8 * p.dot), o = (1 - sq) / 2;
+        ctx.fillStyle = p.ink; ctx.beginPath(); let dI = '', dP = '';
+        l.pixels.forEach(([c, r, k]) => { if (k === 2) { ctx.rect(c, r, 1.02, 1.02); dI += `M${c} ${r}h1.02v1.02h-1.02z`; } });
+        l.pixels.forEach(([c, r, k]) => { if (k === 0) { ctx.rect(c + o, r + o, sq, sq); dI += `M${(c + o).toFixed(2)} ${(r + o).toFixed(2)}h${sq.toFixed(2)}v${sq.toFixed(2)}h-${sq.toFixed(2)}z`; } });
+        ctx.fill();
+        ctx.fillStyle = p.paper; ctx.beginPath();
+        l.pixels.forEach(([c, r, k]) => { if (k === 1) { ctx.rect(c + o, r + o, sq, sq); dP += `M${(c + o).toFixed(2)} ${(r + o).toFixed(2)}h${sq.toFixed(2)}v${sq.toFixed(2)}h-${sq.toFixed(2)}z`; } });
+        ctx.fill(); ctx.fillStyle = p.ink;
+        svgOn && (svg += `<path d="${dI}" stroke="none"/><path d="${dP}" fill="${p.paper}" stroke="none"/>\n`);
+        dots += l.pixels.length;
+      }
+      if (l.faces) {
+        l.faces.forEach((f, fi) => {
+          ctx.save(); ctx.beginPath(); ctx.moveTo(f.x0, f.roofA); ctx.lineTo(f.x1, f.roofB); ctx.lineTo(f.x1, l.rows); ctx.lineTo(f.x0, l.rows); ctx.closePath(); ctx.clip();
+          svgOn && (svg += `<clipPath id="iso${i}_${fi}"><path d="M${f.x0} ${f.roofA.toFixed(3)}L${f.x1} ${f.roofB.toFixed(3)}L${f.x1} ${l.rows}L${f.x0} ${l.rows}Z"/></clipPath><g clip-path="url(#iso${i}_${fi})">`);
+          ctx.fillStyle = p.ink; ctx.beginPath(); let d = '';
+          f.dots.forEach(([xc, yc, w]) => {
+            const h = w / 2, dy = f.sk * h;
+            const pts = [[xc - h, yc - h - dy], [xc + h, yc - h + dy], [xc + h, yc + h + dy], [xc - h, yc + h - dy]];
+            pts.forEach(([px, py], k) => k ? ctx.lineTo(px, py) : ctx.moveTo(px, py)); ctx.closePath();
+            d += 'M' + pts.map(([px, py]) => px.toFixed(2) + ' ' + py.toFixed(2)).join('L') + 'Z';
+          });
+          ctx.fill(); svgOn && (svg += `<path d="${d}" stroke="none"/></g>\n`);
+          ctx.restore();
+          dots += f.dots.length;
+        });
+      }
+      if (l.drops) {
+        const a = hex(p.paper), b = hex(p.ink), N = 48;
+        const tone = t => `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * t)).join(',')})`;
+        ctx.save(); ctx.strokeStyle = p.ink; ctx.globalAlpha = 0.35; ctx.lineWidth = 0.025; ctx.beginPath(); ctx.moveTo(l.line[0], l.line[1]); ctx.lineTo(l.line[2], l.line[3]); ctx.stroke(); ctx.restore();
+        svgOn && (svg += `<line x1="${l.line[0].toFixed(2)}" y1="${l.line[1].toFixed(2)}" x2="${l.line[2].toFixed(2)}" y2="${l.line[3].toFixed(2)}" stroke-width="0.025" stroke-opacity="0.35"/>\n`);
+        l.drops.forEach(([cx, cy, R, q]) => {
+          // square corner direction: q → (±1, ±1); seam angle points at that corner
+          const sx = (q & 1) ? 1 : -1, sy = (q >> 1) ? 1 : -1, seam = Math.atan2(sy, sx);
+          ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.rect(Math.min(cx, cx + sx * R), Math.min(cy, cy + sy * R), R, R); ctx.clip();
+          svgOn && (svg += `<clipPath id="dp${i}_${Math.round(cx * 100)}_${Math.round(cy * 100)}"><circle cx="${cx.toFixed(3)}" cy="${cy.toFixed(3)}" r="${R.toFixed(3)}"/><rect x="${Math.min(cx, cx + sx * R).toFixed(3)}" y="${Math.min(cy, cy + sy * R).toFixed(3)}" width="${R.toFixed(3)}" height="${R.toFixed(3)}"/></clipPath><g clip-path="url(#dp${i}_${Math.round(cx * 100)}_${Math.round(cy * 100)})">`);
+          const RR = R * 1.5;
+          for (let k = 0; k < N; k++) {
+            const a0 = seam + (k / N) * Math.PI * 2, a1 = seam + ((k + 1.15) / N) * Math.PI * 2, col = tone(0.12 + 0.88 * (k / (N - 1)));
+            ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, RR, a0, a1); ctx.closePath(); ctx.fill();
+            svgOn && (svg += `<path d="M${cx.toFixed(3)} ${cy.toFixed(3)}L${(cx + RR * Math.cos(a0)).toFixed(3)} ${(cy + RR * Math.sin(a0)).toFixed(3)}A${RR.toFixed(3)} ${RR.toFixed(3)} 0 0 1 ${(cx + RR * Math.cos(a1)).toFixed(3)} ${(cy + RR * Math.sin(a1)).toFixed(3)}Z" fill="${col}" stroke="none"/>`);
+          }
+          svgOn && (svg += `</g>\n`);
+          ctx.restore();
+        });
+        ctx.fillStyle = p.ink; ctx.strokeStyle = p.ink;
+        dots += l.drops.length;
+      }
+      if (l.motifs) {
+        const a = hex(p.paper), mixc = (h, t) => { const b = hex(h); return `rgb(${b.map((v, i) => Math.round(v + (a[i] - v) * t)).join(',')})`; };
+        const pal = [p.ink, p.ink2, p.ink3, p.paper, mixc(p.ink, 0.55), mixc(p.ink2, 0.6)];
+        const B = l.motifs.B, g = 0.08;
+        const circ = (cx, cy, r, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); svgOn && (svg += `<circle cx="${cx.toFixed(3)}" cy="${cy.toFixed(3)}" r="${r.toFixed(3)}" fill="${col}" stroke="none"/>`); };
+        const rect = (x, y, w, h, col) => { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); svgOn && (svg += `<rect x="${x.toFixed(3)}" y="${y.toFixed(3)}" width="${w.toFixed(3)}" height="${h.toFixed(3)}" fill="${col}" stroke="none"/>`); };
+        l.motifs.tiles.forEach(t => {
+          const x0 = t.x + g / 2, y0 = t.y + g / 2, S = B - g, base = pal[t.base], fig = pal[t.fig], third = pal[t.third];
+          const cx = x0 + S / 2, cy = y0 + S / 2, R = S / 2;
+          ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, S, S); ctx.clip();
+          svgOn && (svg += `<clipPath id="mt${i}_${t.x}_${t.y}"><rect x="${x0.toFixed(3)}" y="${y0.toFixed(3)}" width="${S.toFixed(3)}" height="${S.toFixed(3)}"/></clipPath><g clip-path="url(#mt${i}_${t.x}_${t.y})">`);
+          rect(x0, y0, S, S, base);
+          const corners = [[x0, y0], [x0 + S, y0], [x0, y0 + S], [x0 + S, y0 + S]];
+          switch (t.motif) {
+            case 'star': corners.forEach(([x, y]) => circ(x, y, R, fig)); break;
+            case 'four': [[0.25, 0.25], [0.75, 0.25], [0.25, 0.75], [0.75, 0.75]].forEach(([u, v]) => circ(x0 + u * S, y0 + v * S, S / 4, fig)); break;
+            case 'dots': for (let j = 0; j < 3; j++) for (let k = 0; k < 3; k++) circ(x0 + (k + 0.5) * S / 3, y0 + (j + 0.5) * S / 3, S / 6, fig); break;
+            case 'cstar': circ(cx, cy, R, fig); corners.forEach(([x, y]) => circ(x, y, R * 1.02, base)); break;
+            case 'half': {
+              ctx.fillStyle = fig; ctx.beginPath(); ctx.arc(cx - 0.03, cy, R * 0.92, Math.PI / 2, Math.PI * 1.5); ctx.closePath(); ctx.fill();
+              ctx.fillStyle = third; ctx.beginPath(); ctx.arc(cx + 0.03, cy, R * 0.92, -Math.PI / 2, Math.PI / 2); ctx.closePath(); ctx.fill();
+              const rr = (R * 0.92).toFixed(3);
+              svgOn && (svg += `<path d="M${(cx - 0.03).toFixed(3)} ${(cy + R * 0.92).toFixed(3)}A${rr} ${rr} 0 0 1 ${(cx - 0.03).toFixed(3)} ${(cy - R * 0.92).toFixed(3)}Z" fill="${fig}" stroke="none"/><path d="M${(cx + 0.03).toFixed(3)} ${(cy - R * 0.92).toFixed(3)}A${rr} ${rr} 0 0 1 ${(cx + 0.03).toFixed(3)} ${(cy + R * 0.92).toFixed(3)}Z" fill="${third}" stroke="none"/>`);
+              break; }
+            case 'blob': { circ(cx, cy, R, fig); const [qx, qy] = corners[t.q]; rect(Math.min(qx, cx), Math.min(qy, cy), R, R, fig); break; }
+            case 'quarter': { const [qx, qy] = corners[t.q]; circ(qx, qy, S, fig); break; }
+            case 'ring': { circ(cx, cy, R, fig); const [qx, qy] = corners[t.q]; rect(Math.min(qx, cx), Math.min(qy, cy), R, R, fig); circ(cx, cy, R * 0.45, third); break; }
+          }
+          svgOn && (svg += `</g>\n`);
+          ctx.restore();
+        });
+        ctx.fillStyle = p.ink; ctx.strokeStyle = p.ink;
+        dots += l.motifs.tiles.length;
+      }
+      if (l.tri) {
+        l.tri.forEach(b => {
+          ctx.save(); ctx.beginPath(); ctx.rect(b.x, b.y, b.w + 0.03, b.h + 0.03); ctx.clip();
+          svgOn && (svg += `<clipPath id="tri${i}_${b.x}_${b.y}"><rect x="${b.x}" y="${b.y}" width="${b.w + 0.03}" height="${b.h + 0.03}"/></clipPath><g clip-path="url(#tri${i}_${b.x}_${b.y})">`);
+          b.strips.forEach(([y0, h, flip, dotted]) => {
+            const A = flip ? p.ink2 : p.ink, Bc = flip ? p.ink : p.ink2, k = b.k;
+            ctx.fillStyle = Bc; ctx.fillRect(b.x, y0, b.w + 0.03, h + 0.03);
+            svgOn && (svg += `<rect x="${b.x}" y="${y0}" width="${b.w + 0.03}" height="${h + 0.03}" fill="${Bc}" stroke="none"/>`);
+            ctx.fillStyle = A; ctx.beginPath(); let d = '';
+            for (let x = b.x - k; x < b.x + b.w + k; x += k) {
+              ctx.moveTo(x, y0 + h); ctx.lineTo(x + k, y0 + h); ctx.lineTo(x + k / 2, y0); ctx.closePath();
+              d += `M${x} ${y0 + h}L${x + k} ${y0 + h}L${x + k / 2} ${y0}Z`;
+            }
+            ctx.fill(); svgOn && (svg += `<path d="${d}" fill="${A}" stroke="none"/>`);
+            if (dotted) {
+              ctx.fillStyle = p.paper; ctx.beginPath(); let dd = '';
+              for (let x = b.x; x <= b.x + b.w + 0.01; x += k) { ctx.moveTo(x + 0.09, y0 + h); ctx.arc(x, y0 + h, 0.09, 0, Math.PI * 2); dd += `<circle cx="${x}" cy="${y0 + h}" r="0.09" fill="${p.paper}" stroke="none"/>`; }
+              for (let x = b.x + k / 2; x < b.x + b.w; x += k) { ctx.moveTo(x + 0.09, y0); ctx.arc(x, y0, 0.09, 0, Math.PI * 2); dd += `<circle cx="${x}" cy="${y0}" r="0.09" fill="${p.paper}" stroke="none"/>`; }
+              ctx.fill(); svgOn && (svg += dd);
+            }
+          });
+          svgOn && (svg += `</g>\n`);
+          ctx.restore();
+        });
+        ctx.fillStyle = p.ink; ctx.strokeStyle = p.ink;
+        dots += l.tri.length;
+      }
+      if (l.glyphs) {
+        const lw = 0.07 * p.dot, m = 0.08; // stroke, inset
+        ctx.save(); ctx.strokeStyle = p.ink; ctx.fillStyle = p.ink; ctx.lineWidth = lw; ctx.lineCap = 'butt';
+        let path = '';
+        ctx.beginPath();
+        l.glyphs.forEach(([c, r, g, sgn]) => {
+          const x0 = c + m, y0 = r + m, x1 = c + 1 - m, y1 = r + 1 - m, cx = c + 0.5, cy = r + 0.5;
+          if (g === 0) { ctx.moveTo(cx + 0.05, cy); ctx.arc(cx, cy, 0.05, 0, Math.PI * 2); svgOn && (svg += `<circle cx="${cx}" cy="${cy}" r="0.05" stroke="none"/>\n`); return; }
+          if (g === 4) { ctx.rect(c, r, 1.02, 1.02); svgOn && (svg += `<rect x="${c}" y="${r}" width="1.02" height="1.02" stroke="none"/>\n`); return; }
+          const seg = (ax, ay, bx, by) => { ctx.moveTo(ax, ay); ctx.lineTo(bx, by); path += `M${ax.toFixed(2)} ${ay.toFixed(2)}L${bx.toFixed(2)} ${by.toFixed(2)}`; };
+          if (g === 1) { if (sgn > 0) seg(x0, y1, x1, y0); else seg(x0, y0, x1, y1); return; }
+          seg(x0, y0, x1, y1); seg(x0, y1, x1, y0);
+          if (g === 3) { seg(cx, y0, cx, y1); seg(x0, cy, x1, cy); }
+        });
+        ctx.fill();
+        ctx.restore();
+        ctx.save(); ctx.strokeStyle = p.ink; ctx.lineWidth = lw; ctx.beginPath();
+        l.glyphs.forEach(([c, r, g, sgn]) => {
+          if (g === 0 || g === 4) return;
+          const x0 = c + m, y0 = r + m, x1 = c + 1 - m, y1 = r + 1 - m, cx = c + 0.5, cy = r + 0.5;
+          if (g === 1) { if (sgn > 0) { ctx.moveTo(x0, y1); ctx.lineTo(x1, y0); } else { ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); } return; }
+          ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.moveTo(x0, y1); ctx.lineTo(x1, y0);
+          if (g === 3) { ctx.moveTo(cx, y0); ctx.lineTo(cx, y1); ctx.moveTo(x0, cy); ctx.lineTo(x1, cy); }
+        });
+        ctx.stroke(); ctx.restore();
+        svgOn && (svg += `<path d="${path}" fill="none" stroke-width="${lw.toFixed(3)}"/>\n`);
+        dots += l.glyphs.length;
+      }
+      if (l.patches) {
+        const pal = [p.ink, p.ink2, p.ink3];
+        l.patches.forEach(pt => {
+          const colr = pal[pt.colr], mark = pt.invert ? p.paper : colr, k = pt.k;
+          ctx.save(); ctx.beginPath(); ctx.rect(pt.X0, pt.Y0, pt.X1 - pt.X0, pt.Y1 - pt.Y0); ctx.clip();
+          svgOn && (svg += `<g>`);
+          if (pt.invert) { ctx.fillStyle = colr; ctx.fillRect(pt.X0, pt.Y0, pt.X1 - pt.X0, pt.Y1 - pt.Y0); svgOn && (svg += `<rect x="${pt.X0.toFixed(2)}" y="${pt.Y0.toFixed(2)}" width="${(pt.X1 - pt.X0).toFixed(2)}" height="${(pt.Y1 - pt.Y0).toFixed(2)}" fill="${colr}" stroke="none"/>`); }
+          ctx.strokeStyle = mark; ctx.fillStyle = mark; ctx.lineCap = 'round';
+          pt.marks.forEach(([x, y, d]) => {
+            const dd = pt.invert ? 1 - d : d;
+            if (dd < 0.1 || pt.style === 'dot') {
+              const r = pt.style === 'dot' ? k * (0.06 + 0.4 * dd) * p.dot : k * 0.06;
+              ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+              svgOn && (svg += `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${r.toFixed(3)}" fill="${mark}" stroke="none"/>`);
+              return;
+            }
+            const a = k * 0.4, w = k * (pt.style === 'xfat' ? 0.18 + 0.5 * dd : 0.07 + 0.3 * dd) * p.dot;
+            ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x - a, y - a); ctx.lineTo(x + a, y + a); ctx.moveTo(x + a, y - a); ctx.lineTo(x - a, y + a); ctx.stroke();
+            svgOn && (svg += `<path d="M${(x - a).toFixed(2)} ${(y - a).toFixed(2)}L${(x + a).toFixed(2)} ${(y + a).toFixed(2)}M${(x + a).toFixed(2)} ${(y - a).toFixed(2)}L${(x - a).toFixed(2)} ${(y + a).toFixed(2)}" stroke="${mark}" stroke-width="${w.toFixed(3)}" stroke-linecap="round" fill="none"/>`);
+          });
+          svgOn && (svg += `</g>\n`);
+          ctx.restore();
+          dots += pt.marks.length;
+        });
+        ctx.fillStyle = p.ink; ctx.strokeStyle = p.ink;
+      }
+      if (l.star) {
+        const { small, big, cx, cy } = l.star, id = 'clip' + i;
+        ctx.save(); ctx.beginPath(); ctx.rect(0, 0, l.cols, l.rows); ctx.clip();
+        ctx.fillStyle = p.ink; ctx.fillRect(0, 0, l.cols, l.rows);
+        ctx.translate(cx, cy); ctx.rotate(Math.PI / 4);
+        svgOn && (svg += `<clipPath id="${id}"><rect x="0" y="0" width="${l.cols}" height="${l.rows}"/></clipPath><g clip-path="url(#${id})"><rect x="0" y="0" width="${l.cols}" height="${l.rows}" stroke="none"/><g transform="translate(${cx} ${cy}) rotate(45)" fill="${p.paper}" stroke="${p.ink}" stroke-width="0.045">\n`);
+        ctx.fillStyle = p.paper; ctx.strokeStyle = p.ink;
+        small.forEach(([x, y, r, lw]) => {
+          ctx.lineWidth = lw; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, 1, 1, r); else ctx.rect(x, y, 1, 1); ctx.fill(); ctx.stroke();
+          svgOn && (svg += `<rect x="${x}" y="${y}" width="1" height="1" rx="${r.toFixed(3)}" stroke-width="${lw.toFixed(3)}"/>\n`);
+        });
+        big.forEach(([x, y, r, lw]) => {
+          ctx.lineWidth = lw; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, 2, 2, r); else ctx.rect(x, y, 2, 2); ctx.stroke();
+          svgOn && (svg += `<rect x="${x}" y="${y}" width="2" height="2" rx="${r.toFixed(3)}" fill="none" stroke-width="${lw.toFixed(3)}"/>\n`);
+        });
+        svgOn && (svg += `</g></g>\n`);
+        ctx.restore();
+        ctx.fillStyle = p.ink; ctx.strokeStyle = p.ink;
+        dots += small.length;
+      }
+      if (l.halves) {
+        ctx.save(); ctx.strokeStyle = p.ink; ctx.globalAlpha = 0.13; ctx.lineWidth = 0.05; ctx.beginPath();
+        for (let r = 0; r <= l.rows; r++) { ctx.moveTo(0, r); ctx.lineTo(l.cols, r); svgOn && (svg += `<line x1="0" y1="${r}" x2="${l.cols}" y2="${r}" stroke-width="0.05" stroke-opacity="0.13"/>\n`); }
+        for (let c = 0; c <= l.cols; c++) { ctx.moveTo(c, 0); ctx.lineTo(c, l.rows); svgOn && (svg += `<line x1="${c}" y1="0" x2="${c}" y2="${l.rows}" stroke-width="0.05" stroke-opacity="0.13"/>\n`); }
+        ctx.stroke(); ctx.restore();
+        const ctr = [[0.5, 0], [1, 0.5], [0.5, 1], [0, 0.5]], st = [0, Math.PI / 2, Math.PI, Math.PI * 1.5];
+        ctx.beginPath();
+        l.halves.forEach(([c, r, d]) => {
+          const cx = c + ctr[d][0], cy = r + ctr[d][1], a0 = st[d];
+          ctx.moveTo(cx + 0.5 * Math.cos(a0), cy + 0.5 * Math.sin(a0)); ctx.arc(cx, cy, 0.5, a0, a0 + Math.PI); ctx.closePath();
+          const x1 = cx + 0.5 * Math.cos(a0), y1 = cy + 0.5 * Math.sin(a0), x2 = cx - 0.5 * Math.cos(a0), y2 = cy - 0.5 * Math.sin(a0);
+          svgOn && (svg += `<path d="M${x1.toFixed(3)} ${y1.toFixed(3)} A0.5 0.5 0 0 1 ${x2.toFixed(3)} ${y2.toFixed(3)} Z" stroke="none"/>\n`);
+        });
+        ctx.fill();
+        dots += l.halves.length;
+      }
+      if (l.stamp) {
+        const B = l.stamp.B, g = 0.12, S = B - g, rr = 0.35, lw = 0.09;
+        const rrect = (x, y, w, h, r, col) => { ctx.fillStyle = col; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); ctx.fill(); svgOn && (svg += `<rect x="${x.toFixed(3)}" y="${y.toFixed(3)}" width="${w.toFixed(3)}" height="${h.toFixed(3)}" rx="${r}" fill="${col}" stroke="none"/>`); };
+        const circ = (cx, cy, r, col) => { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); svgOn && (svg += `<circle cx="${cx.toFixed(3)}" cy="${cy.toFixed(3)}" r="${r.toFixed(3)}" fill="${col}" stroke="none"/>`); };
+        l.stamp.tiles.forEach(t => {
+          const x0 = t.x + g / 2, y0 = t.y + g / 2, cx = x0 + S / 2, cy = y0 + S / 2;
+          ctx.save(); ctx.translate(cx, cy); ctx.rotate(t.rot * Math.PI / 2); ctx.translate(-cx, -cy);
+          svgOn && (svg += `<g transform="rotate(${t.rot * 90} ${cx.toFixed(3)} ${cy.toFixed(3)})">`);
+          const ink = p.ink, pap = p.paper;
+          switch (t.kind) {
+            case 'solid': rrect(x0, y0, S, S, rr, ink); break;
+            case 'line': rrect(x0, y0, S, S, rr, ink); rrect(cx - lw / 2, y0 + S * 0.22, lw, S * 0.78, lw / 2, pap); break;
+            case 'linedot': rrect(x0, y0, S, S, rr, ink); rrect(cx - lw / 2, y0 + S * 0.3, lw, S * 0.7, lw / 2, pap); circ(cx, y0 + S * 0.3, S * 0.11, pap); break;
+            case 'circle': rrect(x0, y0, S, S, rr, ink); circ(x0 + S * (0.3 + 0.4 * t.s), cy, S * 0.17, pap); break;
+            case 'split': { rrect(x0, y0, S, S, rr, ink); const k = S * (0.35 + 0.3 * t.s); rrect(x0 - 0.1, y0 + k - lw / 2, S + 0.2, lw, 0, pap); rrect(x0 + S * 0.62 - lw / 2, y0 + k, lw, S - k + 0.1, 0, pap); circ(x0 + S * 0.81, y0 + k + (S - k) / 2, S * 0.13, pap); break; }
+            case 'cross': rrect(x0, y0, S, S, rr, ink); rrect(x0 + S * 0.25, y0 + S * 0.25, S * 0.5, S * 0.5, S * 0.25, pap); rrect(x0 + S * 0.42, y0 - 0.1, S * 0.16, S + 0.2, 0, pap); rrect(x0 - 0.1, y0 + S * 0.42, S + 0.2, S * 0.16, 0, pap); rrect(x0 + S * 0.32, y0 + S * 0.32, S * 0.36, S * 0.36, S * 0.18, ink); break;
+            case 'inv': circ(cx, cy, S * 0.3, ink); break;
+          }
+          svgOn && (svg += `</g>\n`);
+          ctx.restore();
+        });
+        ctx.fillStyle = p.ink; ctx.strokeStyle = p.ink;
+        dots += l.stamp.tiles.length;
+      }
+      if (l.cube) {
+        ctx.save(); ctx.fillStyle = p.ink; ctx.beginPath(); let d = '';
+        const gap = 0.14;
+        l.cube.forEach(([ox, oy, A, B, C, dk]) => {
+          const w = Math.min(1, (0.1 + 0.9 * dk) * p.dot); // 1 = full rhombus, →0 = a bar along edge A–B
+          const lerp = ([ax, ay], [bx, by], t) => [ax + (bx - ax) * t, ay + (by - ay) * t];
+          const O = [ox, oy];
+          // shrink the rhombus O-A-B-C toward its outer edge A–B, then inset for a gap
+          let P = [A, B, lerp(B, C, w), lerp(A, O, w)];
+          const cx = (P[0][0] + P[1][0] + P[2][0] + P[3][0]) / 4, cy = (P[0][1] + P[1][1] + P[2][1] + P[3][1]) / 4;
+          P = P.map(([px, py]) => [px + (cx - px) * gap, py + (cy - py) * gap]);
+          P.forEach(([px, py], i) => i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)); ctx.closePath();
+          d += 'M' + P.map(([px, py]) => px.toFixed(2) + ' ' + py.toFixed(2)).join('L') + 'Z';
+        });
+        ctx.fill(); ctx.restore();
+        svgOn && (svg += `<path d="${d}" stroke="none"/>\n`);
+        dots += l.cube.length;
+      }
+      if (l.rhomb) {
+        const k = 0.42 * p.dot, h = k * Math.sqrt(3) / 2; // half-diagonals of a 60° rhombus
+        ctx.save(); ctx.fillStyle = p.ink; ctx.beginPath(); let d = '';
+        l.rhomb.forEach(([x, y, o, tri]) => {
+          const a = o * Math.PI / 3, ca = Math.cos(a), sa = Math.sin(a);
+          let pts = [[-k, 0], [0, -h * 0.577 * 1.0], [k, 0], [0, h * 0.577]];
+          // rhombus with 60°/120° angles: long diagonal 2k, short diagonal 2k/√3
+          pts = [[-k, 0], [0, -k / Math.sqrt(3)], [k, 0], [0, k / Math.sqrt(3)]];
+          if (tri === 1) pts = pts.slice(0, 3); else if (tri === 2) pts = [pts[0], pts[2], pts[3]];
+          const P = pts.map(([px, py]) => [x + px * ca - py * sa, y + px * sa + py * ca]);
+          P.forEach(([px, py], i) => i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)); ctx.closePath();
+          d += 'M' + P.map(([px, py]) => px.toFixed(2) + ' ' + py.toFixed(2)).join('L') + 'Z';
+        });
+        ctx.fill(); ctx.restore();
+        svgOn && (svg += `<path d="${d}" stroke="none"/>\n`);
+        dots += l.rhomb.length;
+      }
+      if (l.arcs && l.arcs.length) {
+        ctx.save(); ctx.strokeStyle = p.ink; ctx.lineWidth = 0.02; ctx.beginPath(); let d = '';
+        l.arcs.forEach(([x0, y0, dx, dy]) => {
+          const a0 = dx > 0 ? 0 : Math.PI, a1 = dy > 0 ? Math.PI / 2 : -Math.PI / 2, ccw = (dx < 0) !== (dy < 0);
+          ctx.moveTo(x0 + dx, y0); ctx.arc(x0, y0, 1, a0, a1, ccw);
+          d += `M${x0 + dx} ${y0}A1 1 0 0 ${ccw ? 0 : 1} ${x0} ${y0 + dy}`;
+        });
+        ctx.stroke(); ctx.restore();
+        svgOn && (svg += `<path d="${d}" fill="none" stroke-width="0.02"/>\n`);
+      }
+      if (l.pSquares && l.pSquares.length) {
+        ctx.save(); ctx.fillStyle = p.paper; ctx.beginPath();
+        l.pSquares.forEach(([x, y, w]) => { ctx.rect(x, y, w, w); svgOn && (svg += `<rect x="${x}" y="${y}" width="${w}" height="${w}" fill="${p.paper}" stroke="none"/>\n`); });
+        ctx.fill(); ctx.restore();
+      }
+      if (l.pix) {
+        const { rr, cvx, ccv } = l.pix;
+        // convex: cut the corner with paper, put back an ink quarter disc
+        ctx.save(); ctx.fillStyle = p.paper; ctx.beginPath();
+        cvx.forEach(([x, y, sx, sy]) => { ctx.rect(x - (sx > 0 ? rr : 0), y - (sy > 0 ? rr : 0), rr, rr); svgOn && (svg += `<rect x="${(x - (sx > 0 ? rr : 0)).toFixed(3)}" y="${(y - (sy > 0 ? rr : 0)).toFixed(3)}" width="${rr.toFixed(3)}" height="${rr.toFixed(3)}" fill="${p.paper}" stroke="none"/>`); });
+        ctx.fill(); ctx.fillStyle = p.ink; ctx.beginPath();
+        cvx.forEach(([x, y, sx, sy]) => { const cx = x - sx * rr, cy = y - sy * rr; ctx.moveTo(cx + rr, cy); ctx.arc(cx, cy, rr, 0, Math.PI * 2); svgOn && (svg += `<circle cx="${cx.toFixed(3)}" cy="${cy.toFixed(3)}" r="${rr.toFixed(3)}" stroke="none"/>`); });
+        ctx.fill();
+        // concave: add an ink corner block in the empty cell, then carve a paper disc
+        ctx.beginPath();
+        ccv.forEach(([x, y, sx, sy]) => { ctx.rect(x - (sx > 0 ? rr : 0), y - (sy > 0 ? rr : 0), rr, rr); svgOn && (svg += `<rect x="${(x - (sx > 0 ? rr : 0)).toFixed(3)}" y="${(y - (sy > 0 ? rr : 0)).toFixed(3)}" width="${rr.toFixed(3)}" height="${rr.toFixed(3)}" stroke="none"/>`); });
+        ctx.fill(); ctx.fillStyle = p.paper; ctx.beginPath();
+        ccv.forEach(([x, y, sx, sy]) => { const cx = x - sx * rr, cy = y - sy * rr; ctx.moveTo(cx + rr, cy); ctx.arc(cx, cy, rr, 0, Math.PI * 2); svgOn && (svg += `<circle cx="${cx.toFixed(3)}" cy="${cy.toFixed(3)}" r="${rr.toFixed(3)}" fill="${p.paper}" stroke="none"/>`); });
+        ctx.fill(); ctx.restore();
+        svgOn && (svg += '\n');
+      }
+      if (l.wedges.length) {
+        [0, 1].forEach(col => {
+          ctx.save(); ctx.fillStyle = col ? p.paper : p.ink; ctx.beginPath();
+          l.wedges.forEach(([x0, y0, dx, dy, wc, qr]) => {
+            if (wc !== col) return;
+            const a0 = dx > 0 ? 0 : Math.PI, a1 = dy > 0 ? Math.PI / 2 : -Math.PI / 2, ccw = (dx < 0) !== (dy < 0);
+            ctx.moveTo(x0, y0); ctx.arc(x0, y0, qr, a0, a1, ccw); ctx.closePath();
+            svgOn && (svg += `<path d="M${x0} ${y0} L${x0 + dx * qr} ${y0} A${qr} ${qr} 0 0 ${ccw ? 0 : 1} ${x0} ${y0 + dy * qr} Z" fill="${col ? p.paper : p.ink}" stroke="none"/>\n`);
+          });
+          ctx.fill(); ctx.restore();
+        });
+      }
+      if (l.polys.length) {
+        ctx.beginPath();
+        l.polys.forEach(pts => { pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); svgOn && (svg += `<polygon points="${pts.map(([x, y]) => x.toFixed(3) + ',' + y.toFixed(3)).join(' ')}" stroke="none"/>\n`); });
+        ctx.fill();
+      }
+      ctx.beginPath();
+      l.lines.forEach(([a, b, c, d]) => { ctx.moveTo(a, b); ctx.lineTo(c, d); svgOn && (svg += `<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" vector-effect="none"/>\n`); });
+      ctx.stroke();
+      ctx.beginPath();
+      l.circles.forEach(([x, y, r]) => { ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, Math.PI * 2); svgOn && (svg += `<circle cx="${x}" cy="${y}" r="${r.toFixed(3)}" stroke="none"/>\n`); });
+      ctx.fill();
+      if (l.grout) {
+        ctx.save(); ctx.strokeStyle = p.paper; ctx.lineWidth = 0.06; ctx.beginPath();
+        for (let r = 0; r <= l.rows; r += l.grout) { ctx.moveTo(0, r); ctx.lineTo(l.cols, r); svgOn && (svg += `<line x1="0" y1="${r}" x2="${l.cols}" y2="${r}" stroke="${p.paper}" stroke-width="0.06"/>\n`); }
+        for (let c = 0; c <= l.cols; c += l.grout) { ctx.moveTo(c, 0); ctx.lineTo(c, l.rows); svgOn && (svg += `<line x1="${c}" y1="0" x2="${c}" y2="${l.rows}" stroke="${p.paper}" stroke-width="0.06"/>\n`); }
+        ctx.stroke(); ctx.restore();
+      }
+      ctx.restore();
+      svgOn && (svg += `</g>\n`);
+      dots += l.circles.length + l.squares.length + l.wedges.length;
+      y0 += heights[i] + W * gap;
+    });
+    svgOn && (svg += `</svg>`);
+    if (hasRaster && svgOn) svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W.toFixed(0)}" height="${H.toFixed(0)}" viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}"><image href="${cv.toDataURL('image/png')}" width="${W.toFixed(0)}" height="${H.toFixed(0)}"/></svg>`;
+    if (svgOn) { lastSvg = svg; $('svgOut').textContent = svg.length > 60000 ? svg.slice(0, 60000) + '\n… (복사 버튼은 전체를 복사합니다)' : svg; }
+    else lastSvg = '';
+    $('info').textContent = levels.map(l => `${l.cols}×${l.rows}`).join('  →  ') + `   ·   ${dots} dots`;
+  }
+
+  function hex(h) { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); }
+  function getSvg() { if (!lastSvg) { svgOn = true; render(); svgOn = false; } return lastSvg; }
+  function schedule() { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; render(); }); }
+  function toast(msg) { $('toast').textContent = msg; setTimeout(() => { if ($('toast').textContent === msg) $('toast').textContent = ''; }, 2200); }
+
+  let dl = null;
+  if (window.claude && typeof window.claude.use === 'function') {
+    window.claude.use('downloads').then(ns => { dl = ns; }).catch(() => {});
+  }
+  async function download(name, blob) {
+    if (dl) {
+      try { await dl.save({ filename: name, data: blob }); toast(name + ' 저장됨'); }
+      catch (e) { if (e && e.code !== 'declined') toast('저장할 수 없어요 — SVG 코드를 복사해 쓰세요'); }
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  ids.forEach(id => {
+    const el = $(id), out = $(id + 'V');
+    el.addEventListener('input', () => { out.textContent = el.value; schedule(); });
+  });
+  ['text','font','diag','ink','paper','ink2','ink3'].forEach(id => $(id).addEventListener('input', schedule));
+  $('mode').addEventListener('input', () => {
+    const neg = $('mode').value === 'neg';
+    $('dotLabel').textContent = neg ? '모서리 구멍 크기 (클수록 목이 가늘어짐)' : '점 크기';
+    const q = $('mode').value === 'quarter', gr = $('mode').value === 'grid', pos = $('mode').value === 'pos', qd = $('mode').value === 'quad', pl = $('mode').value === 'pill', va = $('mode').value === 'vasa', le = $('mode').value === 'lens', ba = $('mode').value === 'bau', stm = $('mode').value === 'star', pa = $('mode').value === 'patch', asc = $('mode').value === 'ascii', mo = $('mode').value === 'moon', tr = $('mode').value === 'tri', mf = $('mode').value === 'motif', bl = $('mode').value === 'blocks', dr = $('mode').value === 'drop', iso = $('mode').value === 'iso', by = $('mode').value === 'bayer', po = $('mode').value === 'poster', rb = $('mode').value === 'rhomb', cu = $('mode').value === 'cube', stp = $('mode').value === 'stamp', px = $('mode').value === 'pix';
+    if (px) $('dotLabel').textContent = '모서리 둥글기';
+    if (cu) { $('dotLabel').textContent = '면 두께 배율'; $('sprLabel').textContent = '왼쪽 채움 (0이면 글자만)'; $('spr').value = 0; $('sprV').textContent = '0'; }
+    if (rb) { $('dotLabel').textContent = '마름모 크기'; $('sprLabel').textContent = '위쪽 채움 (0이면 글자만)'; $('spr').value = 0; $('sprV').textContent = '0'; }
+    if (iso) $('dotLabel').textContent = '마름모 최대 크기';
+    if (by) { $('dotLabel').textContent = '점 크기'; $('sprLabel').textContent = '바닥 그라데이션'; } else $('sprLabel').textContent = '흩뿌린 작은 점';
+    if (dr) $('dotLabel').textContent = '원 크기';
+    if (asc) $('dotLabel').textContent = '선 굵기';
+    if (stm) $('dotLabel').textContent = '모서리 둥글기 (별 크기)';
+    if (pa) $('dotLabel').textContent = 'X 굵기 배율';
+    $('pillhRow').hidden = !pl; $('refrRow').hidden = !pl; $('tonesRow').hidden = !va; $('lbiasRow').hidden = !le;
+    $('bgdRow').hidden = !(q || ba || dr || po || stp);
+    if (le) $('dotLabel').textContent = '렌즈 최대 폭';
+    if (va) { $('dotLabel').textContent = '반원 크기'; if (parseFloat($('dot').value) > 1) { $('dot').value = 1; $('dotV').textContent = '1'; } }
+    if (pl) { $('dotLabel').textContent = '캡슐 너비 (칸 대비)'; if (parseFloat($('dot').value) > 0.98) { $('dot').value = 0.9; $('dotV').textContent = '0.9'; } }
+    $('warpRow').hidden = !gr;
+    if (pos) $('dotLabel').textContent = '점 크기';
+    if (q) $('dotLabel').textContent = '4분원 반지름 (1.0이면 이웃과 정확히 맞물림)';
+    if (gr) $('dotLabel').textContent = '창 크기 (격자선 굵기의 반대)';
+    if (qd) $('dotLabel').textContent = '안쪽 원 크기';
+    $('bridge').disabled = neg || q || gr || qd || pl; $('smooth').disabled = neg || q || gr || qd || pl; $('diag').disabled = neg || q || gr || qd || pl; $('spr').disabled = q || gr || pl; $('thr').disabled = q || gr || qd || pl || va || le; $('spr').disabled = $('spr').disabled || le; $('seed').disabled = pl || va; $('bridge').disabled = $('bridge').disabled || va || le || ba; $('smooth').disabled = $('smooth').disabled || va || le || ba; $('diag').disabled = $('diag').disabled || va || le || ba; $('dot').disabled = ba; $('spr').disabled = $('spr').disabled || ba || stm || pa || asc || mo; $('thr').disabled = $('thr').disabled || stm || pa || asc; $('bridge').disabled = $('bridge').disabled || stm || pa || asc || mo; $('smooth').disabled = $('smooth').disabled || stm || pa || asc || mo; $('diag').disabled = $('diag').disabled || stm || pa || asc || mo; $('dot').disabled = $('dot').disabled || mo || tr || mf || bl; $('spr').disabled = $('spr').disabled || tr || mf || bl || dr || iso; $('thr').disabled = $('thr').disabled || tr || mf || bl || dr || iso || by; $('dot').disabled = $('dot').disabled || po; $('spr').disabled = ($('spr').disabled || po) && !rb && !cu; $('thr').disabled = $('thr').disabled || cu || stp; $('bridge').disabled = $('bridge').disabled || px; $('smooth').disabled = $('smooth').disabled || px; $('diag').disabled = $('diag').disabled || px; $('dot').disabled = $('dot').disabled || stp; $('spr').disabled = $('spr').disabled || stp; $('bridge').disabled = $('bridge').disabled || stp; $('smooth').disabled = $('smooth').disabled || stp; $('diag').disabled = $('diag').disabled || stp; $('bridge').disabled = $('bridge').disabled || cu; $('smooth').disabled = $('smooth').disabled || cu; $('diag').disabled = $('diag').disabled || cu; $('thr').disabled = $('thr').disabled || rb; $('bridge').disabled = $('bridge').disabled || rb; $('smooth').disabled = $('smooth').disabled || rb; $('diag').disabled = $('diag').disabled || rb; $('bridge').disabled = $('bridge').disabled || po; $('smooth').disabled = $('smooth').disabled || po; $('diag').disabled = $('diag').disabled || po; $('bridge').disabled = $('bridge').disabled || tr || mf || bl || dr || iso || by; $('smooth').disabled = $('smooth').disabled || tr || mf || bl || dr || iso || by; $('diag').disabled = $('diag').disabled || tr || mf || bl || dr || iso || by;
+    if (neg && parseFloat($('dot').value) > 1) { $('dot').value = 0.92; $('dotV').textContent = '0.92'; }
+    if (q) { $('dot').value = 1; $('dotV').textContent = '1'; }
+    render();
+  });
+  $('shuffle').addEventListener('click', () => { const s = $('seed'); s.value = 1 + Math.floor(Math.random() * 999); $('seedV').textContent = s.value; render(); });
+  $('copySvg').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(getSvg()); toast('SVG 복사됨'); }
+    catch (e) { toast('복사 실패 — 아래 코드 보기에서 직접 복사하세요'); }
+  });
+  $('dlSvg').addEventListener('click', () => download('dot-blob-type.svg', new Blob([getSvg()], { type: 'image/svg+xml' })));
+  $('dlPng').addEventListener('click', () => cv.toBlob(b => download('dot-blob-type.png', b), 'image/png'));
+  let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(render, 120); });
+
+  $('svgDetails').addEventListener('toggle', () => { if ($('svgDetails').open) getSvg(); });
+  const setText = t => { $('text').value = t; updatePreview(); schedule(); };
+  $('azUpper').addEventListener('click', () => setText('ABCDEFGHIJKLM\nNOPQRSTUVWXYZ'));
+  $('azLower').addEventListener('click', () => setText('abcdefghijklm\nnopqrstuvwxyz'));
+  $('az09').addEventListener('click', () => setText('ABCDEFGHIJKLM\nNOPQRSTUVWXYZ\n0123456789'));
+  function updatePreview() { const pv = $('preview'); pv.textContent = $('text').value; pv.style.fontFamily = `"${$('font').value}", sans-serif`; }
+  $('text').addEventListener('input', updatePreview); $('font').addEventListener('input', updatePreview); updatePreview();
+  render();
+  const faces = ['Archivo Black', 'Unbounded', 'Syne', 'Instrument Serif'].map(f => document.fonts.load(`900 100px "${f}"`).catch(() => {}));
+  Promise.all(faces).then(render);
+  document.fonts.addEventListener('loadingdone', render);
+})();
+</script>
+</body></html>
